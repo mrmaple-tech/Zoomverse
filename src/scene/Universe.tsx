@@ -2,7 +2,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Stars } from '@react-three/drei';
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing';
-import type { Group } from 'three';
+import { WebGLRenderTarget, type Group, type Material, type Mesh, type Object3D } from 'three';
 import { AU, KPC, MPC, PC, eqjToScene } from '../lib/coords.ts';
 import { get } from '../catalog.ts';
 import { simDate, useStore } from '../store.ts';
@@ -28,6 +28,44 @@ function YouAreHere() {
   // just above the north pole, so it doesn't cover the globe up close (negligible offset when zoomed out)
   useFrame(() => ref.current.position.copy(get('earth').pos(simDate())).add(ABOVE_POLE).divideScalar(AU));
   return <group ref={ref}><Label id="earth" text="You are here" window={ALWAYS} variant="here" /></group>;
+}
+
+const idle = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 200 }) : setTimeout(f, 16));
+
+/**
+ * Compiles every layer's shaders up front (during the intro) instead of the first time each layer
+ * fades in, which stalled the zoom for ~100 ms per new shader.
+ */
+function Precompile({ direct }: { direct: boolean }) {
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const hidden: Object3D[] = [];
+      scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+      // match the variants the real render uses: faded materials go transparent (useFade), and with
+      // bloom on, the scene draws into the composer's target (no tone mapping, linear output)
+      hidden.forEach((h) => h.traverse((o) => {
+        const m = (o as Mesh).material as Material | undefined;
+        if (m && !Array.isArray(m) && !('uniforms' in m)) m.transparent = true;
+      }));
+      const rt = direct ? null : new WebGLRenderTarget(1, 1), prev = gl.getRenderTarget();
+      gl.setRenderTarget(rt);
+      const mats = [...gl.compile(scene, camera)];
+      gl.setRenderTarget(prev);
+      rt?.dispose();
+      hidden.forEach((o) => { o.visible = false; });
+      // browsers link lazily: fetching uniforms finishes each link now, one per idle slot, not mid-zoom
+      const next = () => {
+        const m = mats.pop();
+        if (!m) return;
+        (gl.properties.get(m) as { currentProgram?: { getUniforms(): unknown } }).currentProgram?.getUniforms();
+        idle(next);
+      };
+      idle(next);
+    }, 100);
+    return () => clearTimeout(id);
+  }, [gl, scene, camera, direct]);
+  return null;
 }
 
 /**
@@ -70,7 +108,8 @@ export function Universe() {
       <Stars radius={300} depth={80} count={7000} factor={5} saturation={0.4} fade />
       <Rig />
       <Space unit={AU}>
-        <Suspense fallback={null}><EarthMoonLayer /></Suspense>
+        {/* Precompile waits inside the boundary so Earth's textured materials exist when it runs */}
+        <Suspense fallback={null}><EarthMoonLayer />{far && <Precompile direct={tier === 0} />}</Suspense>
         <InnerSolarLayer />
         <OuterSolarLayer />
         {far && <HeliosphereLayer />}

@@ -1,10 +1,12 @@
 // Sky view: the sky from the viewer's location (Greenwich until they share one), following the
 // simulation clock. Real bright stars, constellation figures, the Milky Way, Sun, Moon (with phase),
-// planets and satellites crossing overhead, under a sky that brightens with the Sun.
+// planets and satellites crossing overhead, under a physically based atmosphere (Preetham) that
+// follows the Sun, above a hilly horizon. Day / Night jump the clock to local solar noon / midnight.
 import { useEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { BackSide, BufferGeometry, Color, DoubleSide, LineBasicMaterial, LineSegments, Matrix4, ShaderMaterial, Vector3, type Group, type PerspectiveCamera, type Points } from 'three';
-import { Body, Equator, Observer, SiderealTime } from 'astronomy-engine';
+import { AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, Color, DoubleSide, LineBasicMaterial, LineSegments, Matrix4, MeshBasicMaterial, ShaderMaterial, SRGBColorSpace, TextureLoader, Vector3, type Group, type PerspectiveCamera, type Points } from 'three';
+import { Sky as Atmosphere } from 'three/examples/jsm/objects/Sky.js';
+import { Body, Equator, Observer, SearchHourAngle, SiderealTime } from 'astronomy-engine';
 import sky from '../data/sky.json';
 import { locate, nextSimTime, useStore } from '../store.ts';
 import { galToEqj, gauss, rng, unit } from '../lib/coords.ts';
@@ -43,42 +45,68 @@ function horizonMatrix(date: Date, lat: number, lon: number, m: Matrix4) {
 /** Local horizon direction from elevation/azimuth (radians, azimuth from north through east). */
 const altAz = (el: number, az: number, v: Vector3) => v.set(Math.cos(el) * Math.sin(az), Math.sin(el), -Math.cos(el) * Math.cos(az));
 
-/** The sky's own glow: deep blue by day, an orange band near the Sun at twilight, faint horizon glow at night. */
+/** The night sky's own faint glow (airglow, distant towns); the atmosphere mesh adds daylight on top. */
 const domeMaterial = () =>
   new ShaderMaterial({
     side: BackSide,
     depthWrite: false,
-    uniforms: { sun: { value: new Vector3(0, -1, 0) } },
     vertexShader: /* glsl */ `varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: /* glsl */ `
-      uniform vec3 sun; varying vec3 vDir;
+      varying vec3 vDir;
       void main() {
-        vec3 d = normalize(vDir);
-        float h = clamp(d.y, 0.0, 1.0), s = sun.y; // clamped: pow() of a negative is NaN on GPUs
-        float day = smoothstep(-0.1, 0.25, s);
-        float near = pow(max(dot(d, sun), 0.0), 6.0);
-        vec3 zenith = mix(vec3(0.004, 0.008, 0.02), vec3(0.12, 0.32, 0.68), day);
-        vec3 horizon = mix(vec3(0.02, 0.03, 0.06), vec3(0.55, 0.72, 0.9), day);
-        vec3 col = mix(horizon, zenith, pow(h, 0.45));
-        float twilight = smoothstep(-0.32, -0.02, s) * (1.0 - smoothstep(0.05, 0.3, s));
-        col += vec3(1.0, 0.45, 0.15) * twilight * (0.25 + 0.75 * near) * pow(1.0 - h, 4.0) * 0.7;
-        col += vec3(1.0, 0.9, 0.7) * near * day * 0.35;
-        gl_FragColor = vec4(col, 1.0);
+        float h = clamp(normalize(vDir).y, 0.0, 1.0); // clamped: pow() of a negative is NaN on GPUs
+        gl_FragColor = vec4(mix(vec3(0.03, 0.04, 0.07), vec3(0.004, 0.007, 0.018), pow(h, 0.4)), 1.0);
       }`,
   });
+
+/** Haze low over the horizon: dims and blues the stars there, as the thicker air does. */
+const hazeMaterial = () =>
+  new ShaderMaterial({
+    side: BackSide,
+    transparent: true,
+    depthWrite: false,
+    uniforms: { night: { value: 1 } },
+    vertexShader: /* glsl */ `varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
+      uniform float night; varying vec3 vDir;
+      void main() {
+        float h = clamp(normalize(vDir).y, 0.0, 1.0);
+        gl_FragColor = vec4(0.05, 0.065, 0.1, pow(1.0 - h, 10.0) * 0.92 * night);
+      }`,
+  });
+
+/** Rolling hills and a ragged tree line all the way round, a degree or two high. */
+function horizonGeometry() {
+  const n = 720, r = R * 0.88, pos: number[] = [], idx: number[] = [];
+  for (let i = 0; i <= n; i++) {
+    const a = (i / n) * 2 * Math.PI;
+    const el = 0.9 + 0.8 * Math.sin(2 * a + 0.3) + 0.5 * Math.sin(5 * a + 1.7) + 0.3 * Math.sin(11 * a + 4)
+      + 0.35 * Math.abs(Math.sin(97 * a) * Math.sin(53 * a + 1)) + 0.12 * Math.sin(211 * a);
+    const x = Math.sin(a) * r, z = -Math.cos(a) * r;
+    pos.push(x, -0.1 * r, z, x, Math.tan(Math.max(0.15, el) * D) * r, z);
+    if (i) idx.push(2 * i - 2, 2 * i - 1, 2 * i, 2 * i - 1, 2 * i + 1, 2 * i);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
+  g.setIndex(idx);
+  return g;
+}
 
 /** The Moon's disc, lit from the Sun's direction so it shows its real phase. */
 const moonMaterial = () =>
   new ShaderMaterial({
     transparent: true,
-    uniforms: { sun: { value: new Vector3() }, earthshine: { value: 0 } },
-    vertexShader: /* glsl */ `varying vec3 vN; void main() { vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    uniforms: { sun: { value: new Vector3() }, earthshine: { value: 0 }, map: { value: null } },
+    vertexShader: /* glsl */ `varying vec3 vN; varying vec2 vUv; void main() { vUv = uv; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: /* glsl */ `
-      uniform vec3 sun; uniform float earthshine; varying vec3 vN;
+      uniform vec3 sun; uniform float earthshine; uniform sampler2D map; varying vec3 vN; varying vec2 vUv;
       void main() {
         // the unlit side lets the sky show through, apart from a faint earthshine glow at night
-        float l = smoothstep(-0.05, 0.12, dot(normalize(vN), sun));
-        gl_FragColor = vec4(mix(vec3(0.16, 0.18, 0.24), vec3(1.25, 1.22, 1.15), l), max(l, earthshine));
+        vec3 n = normalize(vN);
+        float l = smoothstep(-0.04, 0.1, dot(n, sun));
+        vec3 surf = texture2D(map, vUv).rgb;
+        vec3 lit = surf * vec3(1.45, 1.42, 1.36) * (0.55 + 0.45 * max(dot(n, sun), 0.0));
+        gl_FragColor = vec4(mix(surf * vec3(0.18, 0.2, 0.26), lit, l), max(l, earthshine));
       }`,
   });
 
@@ -168,14 +196,26 @@ function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef,
       const k = Math.min(1.8, 0.4 + (6 - mag) * 0.25);
       c.push(v.x, v.y, v.z, r * k, g * k, b * k, Math.max(1.4, (6.4 - mag) * 1.35));
     }
+    // the catalogue stops at magnitude 5.5; fill in the faint naked-eye stars (to ~6.5) statistically,
+    // crowding toward the galactic plane as the real ones do
+    const f = rng(4);
+    for (let i = 0; i < 6000; i++) {
+      const plane = f() < 0.55;
+      const v = new Vector3(...galToEqj(...unit(f() * 360, plane ? gauss(f) * 12 : Math.asin(2 * f() - 1) / D))).multiplyScalar(R);
+      const [r, g, b] = starColor(3200 + f() ** 2 * 9000), k = 0.3 + f() * 0.3;
+      c.push(v.x, v.y, v.z, r * k, g * k, b * k, 1.2 + f() * 0.5);
+    }
     // the Milky Way: soft overlapping glows along the galactic plane, brighter and wider toward Sagittarius
     const m = cloud(), rand = rng(9);
-    for (let i = 0; i < 7000; i++) {
-      const l = rand() * 360, toCenter = Math.exp(-((((l + 180) % 360 - 180) / 55) ** 2));
+    for (let i = 0; i < 9000; i++) {
+      const l = rand() * 360, lc = ((l + 180) % 360) - 180, toCenter = Math.exp(-((lc / 55) ** 2));
       const bLat = gauss(rand) * (3 + 5 * toCenter);
       const v = new Vector3(...galToEqj(...unit(l, bLat))).multiplyScalar(R * 1.01);
-      const k = (0.03 + 0.07 * toCenter) * (0.6 + rand() * 0.8);
-      m.push(v.x, v.y, v.z, 0.78 * k, 0.82 * k, k, 16 + rand() * 18);
+      // the Great Rift: dust splitting the band lengthwise from Cygnus down to Sagittarius
+      const rift = 1 - 0.75 * Math.exp(-(((bLat - 0.6) / 1.5) ** 2)) * (lc > -25 && lc < 75 ? 1 : 0);
+      const k = (0.02 + 0.055 * toCenter) * (0.75 + rand() * 0.5) * rift;
+      // warmer, older stars toward the bulge
+      m.push(v.x, v.y, v.z, (0.78 + 0.2 * toCenter) * k, (0.82 + 0.05 * toCenter) * k, (1 - 0.2 * toCenter) * k, 20 + rand() * 18);
     }
     return [c.build(), m.build()];
   }, []);
@@ -194,7 +234,26 @@ function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef,
     satList.forEach(() => c.push(0, 0, 0, 0.9, 0.97, 1, 6));
     return c.build();
   }, [satList]);
-  const [dome, moonMat] = useMemo(() => [domeMaterial(), moonMaterial()], []);
+  const [dome, moonMat, haze] = useMemo(() => [domeMaterial(), moonMaterial(), hazeMaterial()], []);
+  useEffect(() => {
+    const t = new TextureLoader().load(`${import.meta.env.BASE_URL}textures/moon.webp`);
+    t.colorSpace = SRGBColorSpace;
+    moonMat.uniforms.map.value = t;
+    return () => t.dispose();
+  }, [moonMat]);
+  // Preetham daylight model, drawn additively over the night dome; lit by the real Sun position
+  const atmo = useMemo(() => {
+    const a = new Atmosphere();
+    a.scale.setScalar(R * 8);
+    const m = a.material;
+    Object.assign(m, { transparent: true, blending: AdditiveBlending }); // additive: alpha scales its light
+    m.uniforms.fade = { value: 1 };
+    m.fragmentShader = m.fragmentShader.replace('uniform float mieDirectionalG;', 'uniform float mieDirectionalG; uniform float fade;').replace('vec4( retColor, 1.0 )', 'vec4( retColor, fade )');
+    Object.assign(m.uniforms, { turbidity: { value: 1.8 }, rayleigh: { value: 3.6 }, mieCoefficient: { value: 0.0025 }, mieDirectionalG: { value: 0.8 } });
+    return a;
+  }, []);
+  const [hills, land] = useMemo(() => [horizonGeometry(), new MeshBasicMaterial({ color: '#03050a', side: DoubleSide, toneMapped: false })], []);
+  const nightLand = useMemo(() => new Color('#020306'), []), dayLand = useMemo(() => new Color('#1f271c'), []);
   const sun = useRef<Group>(null!);
   const moon = useRef<Group>(null!);
   const tmp = useMemo(() => new Vector3(), []);
@@ -229,11 +288,15 @@ function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef,
 
     // sun direction in the local frame drives the sky color and the Moon's phase
     const sunLocal = tmp.copy(bodyDirs[0]).applyMatrix4(m);
-    dome.uniforms.sun.value.copy(sunLocal);
+    atmo.material.uniforms.sunPosition.value.copy(sunLocal);
     moonMat.uniforms.sun.value.copy(sunLocal);
     const alt = Math.asin(Math.max(-1, Math.min(1, sunLocal.y))) / D;
     night.current = Math.min(1, Math.max(0, -alt / 12));
     moonMat.uniforms.earthshine.value = 0.35 * night.current;
+    haze.uniforms.night.value = night.current;
+    atmo.material.uniforms.fade.value = (1 - night.current) ** 1.5; // its own night floor is grey
+    // the land is lit by the sky: near-black at night, muted green-grey under daylight
+    land.color.lerpColors(nightLand, dayLand, Math.min(1, Math.max(0, (alt + 4) / 14)));
     status.current = alt > 0 ? 'Daytime' : alt > -6 ? 'Civil twilight' : alt > -12 ? 'Nautical twilight' : alt > -18 ? 'Astronomical twilight' : 'Night';
     (figures.material as LineBasicMaterial).opacity = 0.32 * night.current;
     if (!due) return;
@@ -259,29 +322,25 @@ function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef,
 
   return (
     <>
-      <mesh material={dome} renderOrder={-1}><sphereGeometry args={[R * 1.05, 48, 24]} /></mesh>
+      <mesh material={dome} renderOrder={-2}><sphereGeometry args={[R * 1.05, 48, 24]} /></mesh>
+      <primitive object={atmo} renderOrder={-1} />
       <group ref={skyRef}>
         <group userData={{ fadesByDay: true }}><PointCloud geometry={milky} /></group>
         <group userData={{ fadesByDay: true }}><PointCloud geometry={stars} /></group>
         {lines && <primitive object={figures} />}
-        <PointCloud geometry={planets} />
+        <group userData={{ fadesByDay: true }}><PointCloud geometry={planets} /></group>
         <group ref={sun}>
           <mesh><sphereGeometry args={[0.9, 24, 12]} /><meshBasicMaterial color={[3, 2.8, 2.4]} toneMapped={false} /></mesh>
-          <Glow size={26} color="#ffe2a0" />
+          <Glow size={16} color="#ffe2a0" />
         </group>
         {/* drawn ~3× its true size so the phase is readable */}
-        <group ref={moon}><mesh material={moonMat}><sphereGeometry args={[1.4, 32, 16]} /></mesh></group>
+        <group ref={moon}><mesh material={moonMat}><sphereGeometry args={[1.4, 64, 32]} /></mesh></group>
       </group>
       <PointCloud geometry={sats} />
+      <mesh material={haze} renderOrder={5}><sphereGeometry args={[R * 0.92, 48, 24]} /></mesh>
+      <mesh geometry={hills} material={land} />
       {/* ground hides everything below the horizon */}
-      <mesh>
-        <sphereGeometry args={[R * 0.9, 48, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
-        <meshBasicMaterial color="#05070a" side={DoubleSide} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[R * 0.895, R * 0.9, 128]} />
-        <meshBasicMaterial color="#4a5a78" transparent opacity={0.5} side={DoubleSide} />
-      </mesh>
+      <mesh material={land}><sphereGeometry args={[R * 0.9, 48, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} /></mesh>
       <Look />
     </>
   );
@@ -312,6 +371,14 @@ export default function SkyView() {
   const sats = useMemo(() => SATELLITES.filter((s) => hasElements(s.norad)), []);
   const satDirs = useMemo(() => sats.map(() => new Vector3()), [sats]);
   const satUp = useMemo(() => sats.map(() => false), [sats]);
+  const [mode, setMode] = useState<'now' | 'day' | 'night'>('now');
+  // jump to the nearest local solar noon (hour angle 0) or midnight (12)
+  const jump = (m: 'day' | 'night') => {
+    const s = useStore.getState();
+    const t = SearchHourAngle(Body.Sun, new Observer(loc.lat, loc.lon, 0), m === 'day' ? 0 : 12, new Date(s.simTime - 12 * 36e5));
+    s.set({ simTime: t.time.date.getTime() });
+    setMode(m);
+  };
   const close = () => useStore.getState().set({ panel: null });
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === 'Escape' && close();
@@ -329,7 +396,7 @@ export default function SkyView() {
 
   return (
     <div className="panel sky" role="dialog" aria-label="Sky view">
-      <Canvas camera={{ fov: 70, near: 0.1, far: 1000, position: [0, 0, 0] }} dpr={[1, 1.5]}>
+      <Canvas camera={{ fov: 70, near: 0.1, far: 1000, position: [0, 0, 0] }} dpr={[1, 2]} gl={{ toneMappingExposure: 0.32 }}>
         <Sky lat={loc.lat} lon={loc.lon} lines={lines} sats={sats} bodyDirs={bodyDirs} satDirs={satDirs} satUp={satUp} skyRef={skyRef} night={night} status={status} />
         <Labels items={items} els={els} sky={skyRef} night={night} />
       </Canvas>
@@ -339,6 +406,11 @@ export default function SkyView() {
       <header className="sky-head glass">
         <h2>The sky from {home ? 'your location' : 'Greenwich'}</h2>
         <p><Live value={status} /> · {loc.lat.toFixed(1)}°, {loc.lon.toFixed(1)}° · drag to look around, scroll or pinch to zoom</p>
+        <div className="seg sky-time" role="group" aria-label="Time of day">
+          <button aria-pressed={mode === 'now'} onClick={() => { useStore.getState().set({ simTime: Date.now(), speed: 0, reverse: false, playing: true }); setMode('now'); }}>Now</button>
+          <button aria-pressed={mode === 'day'} onClick={() => jump('day')}>Day</button>
+          <button aria-pressed={mode === 'night'} onClick={() => jump('night')}>Night</button>
+        </div>
         <div className="row">
           {!home && <button onClick={() => locate().catch(() => setError('Location unavailable'))}>Use my location</button>}
           <button aria-pressed={lines} onClick={() => setLines(!lines)}>Figures</button>

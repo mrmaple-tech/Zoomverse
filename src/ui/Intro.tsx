@@ -1,6 +1,8 @@
 // Opening title over the live Earth. Any interaction (or either button) dismisses it and the
 // interface fades in.
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+
+const skew = Math.round(performance.now());
 import { startTour } from './Caption.tsx';
 
 export function Intro({ onDone }: { onDone: () => void }) {
@@ -24,7 +26,8 @@ export function Intro({ onDone }: { onDone: () => void }) {
     };
   }, [leaving]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <section className={`intro ${leaving ? 'out' : ''}`} aria-label="Welcome">
+    // --skew continues the entrance animations from where index.html's static copy left them
+    <section className={`intro ${leaving ? 'out' : ''}`} aria-label="Welcome" style={{ '--skew': `${skew}ms` } as CSSProperties}>
       <p className="eyebrow">Zoomverse</p>
       <h1>The universe,<br />to scale.</h1>
       <p className="lede">Fly from your doorstep to the edge of everything we can see. Real planets, real stars, and the satellites passing over you right now.</p>

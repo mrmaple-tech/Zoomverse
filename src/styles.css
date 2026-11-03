@@ -60,14 +60,14 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 }
 .intro.out { opacity: 0; }
 .intro > * { pointer-events: auto; }
-.intro .eyebrow { margin: 0 0 10px; font-size: 17px; font-weight: 600; color: var(--muted); letter-spacing: 0; animation: rise 1100ms var(--ease) 200ms both; }
+.intro .eyebrow { margin: 0 0 10px; font-size: 17px; font-weight: 600; color: var(--muted); letter-spacing: 0; animation: rise 1100ms var(--ease) calc(200ms - var(--skew, 0ms)) both; }
 .intro h1 {
   margin: 0; font-size: clamp(44px, 8.4vw, 96px); line-height: 1.04; font-weight: 700; letter-spacing: -0.035em;
   background: linear-gradient(180deg, #fff 30%, #9fb4d9 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-  animation: rise 1300ms var(--ease) 350ms both;
+  animation: rise 1300ms var(--ease) calc(350ms - var(--skew, 0ms)) both;
 }
-.intro p.lede { max-width: 620px; margin: 18px 0 30px; font-size: clamp(17px, 2vw, 21px); line-height: 1.38; color: var(--muted); animation: rise 1300ms var(--ease) 550ms both; }
-.intro .ctas { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; justify-content: center; animation: rise 1300ms var(--ease) 750ms both; }
+.intro p.lede { max-width: 620px; margin: 18px 0 30px; font-size: clamp(17px, 2vw, 21px); line-height: 1.38; color: var(--muted); animation: rise 1300ms var(--ease) calc(550ms - var(--skew, 0ms)) both; }
+.intro .ctas { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; justify-content: center; animation: rise 1300ms var(--ease) calc(750ms - var(--skew, 0ms)) both; }
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } }
 
 /* ---------- Buttons ---------- */
@@ -312,3 +312,4 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
+.sky-time { margin-top: 12px; width: max-content; }

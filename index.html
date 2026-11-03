@@ -11,12 +11,15 @@
     <link rel="preload" as="image" href="/textures/earth_clouds.webp" crossorigin="anonymous" />
     <link rel="preload" as="image" href="/textures/earth_night.webp" crossorigin="anonymous" />
     <title>Zoomverse — from Earth to the edge of the universe</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- static copy of the intro, painted before any JS loads; React takes over seamlessly (src/ui/Intro.tsx) -->
+    <div id="root"><div><section class="intro" aria-label="Welcome">
+      <p class="eyebrow">Zoomverse</p>
+      <h1>The universe,<br />to scale.</h1>
+      <p class="lede">Fly from your doorstep to the edge of everything we can see. Real planets, real stars, and the satellites passing over you right now.</p>
+      <div class="ctas"><button class="primary">Take the tour</button><button class="link">Start exploring</button></div>
+    </section></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
