@@ -33,7 +33,7 @@ function YouAreHere() {
 const idle = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 200 }) : setTimeout(f, 16));
 
 /**
- * Compiles every layer's shaders up front (during the intro) instead of the first time each layer
+ * Compiles every layer's shaders up front instead of the first time each layer
  * fades in, which stalled the zoom for ~100 ms per new shader.
  */
 function Precompile({ direct }: { direct: boolean }) {

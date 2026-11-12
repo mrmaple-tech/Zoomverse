@@ -45,29 +45,6 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-/* Chrome fades in after the intro */
-.nav, .rail, .scalebar, .timebar { transition: opacity 900ms var(--ease), transform 900ms var(--ease); }
-.intro-on .nav { opacity: 0; transform: translateY(-12px); pointer-events: none; }
-.intro-on .rail, .intro-on .scalebar { opacity: 0; pointer-events: none; }
-.intro-on .timebar { opacity: 0; transform: translate(-50%, 16px); pointer-events: none; }
-
-/* ---------- Intro ---------- */
-.intro {
-  position: fixed; inset: 0; z-index: 45; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  padding: 0 24px max(56px, calc(env(safe-area-inset-bottom) + 40px)); text-align: center; pointer-events: none;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.45) 32%, transparent 58%);
-  transition: opacity 700ms var(--ease);
-}
-.intro.out { opacity: 0; }
-.intro > * { pointer-events: auto; }
-.intro .eyebrow { margin: 0 0 10px; font-size: 17px; font-weight: 600; color: var(--muted); letter-spacing: 0; animation: rise 1100ms var(--ease) calc(200ms - var(--skew, 0ms)) both; }
-.intro h1 {
-  margin: 0; font-size: clamp(44px, 8.4vw, 96px); line-height: 1.04; font-weight: 700; letter-spacing: -0.035em;
-  background: linear-gradient(180deg, #fff 30%, #9fb4d9 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-  animation: rise 1300ms var(--ease) calc(350ms - var(--skew, 0ms)) both;
-}
-.intro p.lede { max-width: 620px; margin: 18px 0 30px; font-size: clamp(17px, 2vw, 21px); line-height: 1.38; color: var(--muted); animation: rise 1300ms var(--ease) calc(550ms - var(--skew, 0ms)) both; }
-.intro .ctas { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; justify-content: center; animation: rise 1300ms var(--ease) calc(750ms - var(--skew, 0ms)) both; }
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } }
 
 /* ---------- Buttons ---------- */
@@ -302,7 +279,6 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   .caption { bottom: 226px; }
   .sz-controls { bottom: 184px; }
   .timebar { flex-wrap: wrap; justify-content: center; left: var(--gap); right: var(--gap); transform: none; border-radius: var(--r-l); }
-  .intro-on .timebar { transform: translateY(16px); }
   .timebar input { flex: 1; min-width: 0; }
   .timebar .moments { flex: 1; max-width: none; }
   .speeds button { padding: 0 8px; font-size: 12px; }
