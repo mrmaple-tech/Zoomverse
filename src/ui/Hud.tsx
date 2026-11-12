@@ -98,6 +98,26 @@ function ScaleToggle() {
   );
 }
 
+const FILTERS = [['labels', 'Names'], ['satellites', 'Satellites'], ['orbits', 'Orbits']] as const;
+
+function Filters() {
+  const show = useStore((s) => s.show);
+  const set = useStore((s) => s.set);
+  return (
+    <details className="filters">
+      <summary>Filter</summary>
+      <div className="filters-menu glass">
+        {FILTERS.map(([k, name]) => (
+          <label key={k}>
+            <input type="checkbox" checked={show[k]} onChange={() => set({ show: { ...show, [k]: !show[k] } })} />
+            {name}
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function Links() {
   const set = useStore((s) => s.set);
   return (
@@ -131,6 +151,7 @@ export function Hud() {
           <Links />
           <div className="nav-right">
             <Search />
+            <Filters />
             <ScaleToggle />
           </div>
         </div>

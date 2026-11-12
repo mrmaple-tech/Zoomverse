@@ -42,6 +42,8 @@ interface State {
 
   selected: string | null;
   readable: boolean;
+  /** Map filters. */
+  show: { labels: boolean; satellites: boolean; orbits: boolean };
 
   /** Guided tour step, or null when not touring. */
   tour: number | null;
@@ -93,6 +95,7 @@ export const useStore = create<State>()((set, get) => ({
 
   selected: null,
   readable: true,
+  show: { labels: true, satellites: true, orbits: true },
 
   tour: null,
   panel: null,

@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { BufferGeometry, Line, LineBasicMaterial, Vector3 } from 'three';
+import { useStore } from '../store.ts';
 import { AU } from '../lib/coords.ts';
 
 /** A closed polyline from a sampler of positions (already in the parent's units). */
@@ -12,7 +13,8 @@ export function Orbit({ sample, color = '#8fa6d6', opacity = 0.35 }: { sample: (
   }, [sample, color, opacity]);
   // resampled orbits (Moon, ISS) replace the line; free the old GPU buffers
   useEffect(() => () => { line.geometry.dispose(); line.material.dispose(); }, [line]);
-  return <primitive object={line} />;
+  const on = useStore((s) => s.show.orbits);
+  return on ? <primitive object={line} /> : null;
 }
 
 /** Heliocentric orbit sampler for a planet over one period, in AU. */

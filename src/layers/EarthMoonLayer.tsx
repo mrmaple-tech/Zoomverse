@@ -34,6 +34,7 @@ function MoonOrbit() {
 }
 
 export function EarthMoonLayer() {
+  const sats = useStore((s) => s.show.satellites);
   const maxAniso = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const textures = useTexture(TEXTURES.map((f) => `${import.meta.env.BASE_URL}textures/${f}.webp`));
   const [day, night, clouds, spec, normal, moonMap] = textures;
@@ -67,7 +68,7 @@ export function EarthMoonLayer() {
         <meshStandardMaterial map={moonMap} roughness={1} />
       </Body>
       <MoonOrbit />
-      <Satellites />
+      {sats && <Satellites />}
       <HomeMarker />
     </>
   );

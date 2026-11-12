@@ -289,3 +289,11 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
 .sky-time { margin-top: 12px; width: max-content; }
+
+/* ---------- Map filters ---------- */
+.filters { position: relative; }
+.filters summary { list-style: none; display: flex; align-items: center; height: 36px; padding: 0 14px; border-radius: var(--pill); background: var(--fill); font-size: 13px; color: var(--muted); cursor: pointer; }
+.filters summary::-webkit-details-marker { display: none; }
+.filters[open] summary { color: var(--text); }
+.filters-menu { position: absolute; right: 0; top: 44px; z-index: 50; display: grid; gap: 4px; padding: 10px 14px; border-radius: var(--r-l); min-width: 150px; }
+.filters-menu label { display: flex; align-items: center; gap: 10px; min-height: 32px; font-size: 14px; cursor: pointer; }
