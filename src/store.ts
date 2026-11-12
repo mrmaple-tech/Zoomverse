@@ -99,7 +99,7 @@ export const useStore = create<State>()((set, get) => ({
   panel: null,
   caption: null,
   home: savedHome(),
-  intro: true,
+  intro: false,
 
   flyTo: (to, toLogD, viewDir) => {
     const s = get();
