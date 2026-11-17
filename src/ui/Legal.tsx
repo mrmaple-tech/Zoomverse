@@ -14,6 +14,8 @@ const PAGES = {
         <p>To show live satellite positions your browser may request public orbit data from CelesTrak (celestrak.org) and Where the ISS at? (wheretheiss.at). Like any web request, those services and our host (GitHub Pages) can see your IP address and browser type. Their own privacy policies apply.</p>
         <h3>Children</h3>
         <p>Zoomverse is safe for all ages because it collects nothing from anyone.</p>
+        <h3>Contact</h3>
+        <p>Questions about privacy? Email <a href="mailto:support@marketrush.org">support@marketrush.org</a>.</p>
       </>
     ),
   },
@@ -28,6 +30,10 @@ const PAGES = {
         <p>Distances, sizes, orbits and pass times are approximations for learning and exploring. Don't rely on them for navigation, safety or scientific work.</p>
         <h3>No warranty</h3>
         <p>The site is provided “as is”, without warranties of any kind. To the extent the law allows, we aren't liable for any damages from using it.</p>
+        <h3>Governing law</h3>
+        <p>These terms are governed by the laws of the State of Texas, USA.</p>
+        <h3>Contact</h3>
+        <p>Email <a href="mailto:support@marketrush.org">support@marketrush.org</a>.</p>
         <h3>Changes</h3>
         <p>We may update these terms; the date below shows the latest version.</p>
       </>
@@ -58,7 +64,7 @@ export function Legal() {
   }, []);
   return (
     <>
-      <button className="legal-btn" onClick={() => showLegal()}>Privacy &amp; Terms</button>
+      <button className="legal-btn" onClick={() => showLegal()}>Privacy</button>
       <dialog ref={ref} className="legal glass" aria-label="Legal" onClick={(e) => e.target === ref.current && ref.current.close()}>
         <div className="legal-head">
           <div className="seg" role="tablist">

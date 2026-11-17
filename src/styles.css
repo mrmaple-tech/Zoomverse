@@ -313,3 +313,4 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .legal p { margin: 0 0 8px; }
 .legal-date { margin-top: 20px !important; font-size: 12px; }
 .filters-menu .privacy { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--hairline); text-align: left; font-size: 14px; color: var(--blue); min-height: 32px; }
+.legal a { color: var(--blue); }

@@ -114,7 +114,7 @@ function Filters() {
             {name}
           </label>
         ))}
-        <button className="privacy" onClick={() => showLegal('privacy')}>Privacy, Terms &amp; Cookies</button>
+        <button className="privacy" onClick={() => showLegal('privacy')}>Privacy</button>
       </div>
     </details>
   );
