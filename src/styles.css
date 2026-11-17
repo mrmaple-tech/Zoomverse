@@ -183,6 +183,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
 .label.here:hover { text-decoration: none; }
+.label.marker { display: flex; align-items: center; gap: 6px; transform: translate(-4px, -50%); }
+.label.marker .pin { background: #ff9a3c; box-shadow: 0 0 0 3px rgba(255, 154, 60, 0.25); animation: none; }
 .label .pin { width: 7px; height: 7px; border-radius: 50%; background: var(--blue-fill); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.25); animation: here 2.4s ease-in-out infinite; }
 @keyframes here { 50% { box-shadow: 0 0 0 6px rgba(0, 113, 227, 0.08); } }
 

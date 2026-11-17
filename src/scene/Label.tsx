@@ -10,7 +10,7 @@ interface Props {
   text: string;
   window: Fade;
   position?: [number, number, number];
-  variant?: 'here' | 'faint';
+  variant?: 'here' | 'faint' | 'marker';
   /** Extra per-frame visibility test (e.g. hidden behind the globe). */
   shown?: () => boolean;
 }
@@ -38,7 +38,7 @@ export function Label({ id, text, window, position, variant, shown }: Props) {
         className={`label ${variant ?? ''} ${selected ? 'selected' : ''}`}
         onClick={() => useStore.getState().select(id)}
       >
-        {variant === 'here' && <span className="pin" aria-hidden />}
+        {(variant === 'here' || variant === 'marker') && <span className="pin" aria-hidden />}
         {text}
       </button>
     </Html>

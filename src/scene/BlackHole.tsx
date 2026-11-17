@@ -224,8 +224,8 @@ export function BlackHole() {
         <icosahedronGeometry args={[1, 3]} />
       </mesh>
       <group ref={label}>
-        {/* named on the way in, then out of the way once the hole itself fills the view */}
-        <Label id={SGR_A.id} text="Sagittarius A*" window={[18.4, 19, 19.5, 19.9]} shown={() => useStore.getState().logD > 12.4} />
+        {/* marked from the edge of the galaxy inward, then out of the way once the hole itself fills the view */}
+        <Label id={SGR_A.id} text="Black hole" variant="marker" window={[12.4, 13, 21.6, 22.2]} shown={() => useStore.getState().logD > 12.4} />
       </group>
     </>
   );
