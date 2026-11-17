@@ -5,6 +5,7 @@ import { LAYERS, layerAt } from '../data/layers.ts';
 import { scaleBar } from '../lib/scale.ts';
 import { Search as SearchIcon } from './icons.tsx';
 import { startTour } from './Caption.tsx';
+import { Legal, showLegal } from './Legal.tsx';
 import { SATELLITES } from '../data/satellites.ts';
 
 const SAT_LABEL = Object.fromEntries(SATELLITES.map((s) => [s.id, s.label]));
@@ -105,7 +106,7 @@ function Filters() {
   const set = useStore((s) => s.set);
   return (
     <details className="filters">
-      <summary>Filter</summary>
+      <summary>Settings</summary>
       <div className="filters-menu glass">
         {FILTERS.map(([k, name]) => (
           <label key={k}>
@@ -113,6 +114,7 @@ function Filters() {
             {name}
           </label>
         ))}
+        <button className="privacy" onClick={() => showLegal('privacy')}>Privacy, Terms &amp; Cookies</button>
       </div>
     </details>
   );
@@ -159,6 +161,7 @@ export function Hud() {
       <LayerNav />
       <Following />
       <ScaleBar />
+      <Legal />
     </>
   );
 }
