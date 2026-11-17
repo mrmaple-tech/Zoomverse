@@ -64,7 +64,7 @@ export function Legal() {
   }, []);
   return (
     <>
-      <button className="legal-btn" onClick={() => showLegal()}>Privacy &amp; Terms</button>
+      <button className="legal-btn" onClick={() => showLegal()}>Privacy</button>
       <dialog ref={ref} className="legal glass" aria-label="Legal" onClick={(e) => e.target === ref.current && ref.current.close()}>
         <div className="legal-head">
           <div className="seg" role="tablist">
