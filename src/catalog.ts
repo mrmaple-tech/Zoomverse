@@ -9,7 +9,7 @@ import { BODIES, HELIO_OBJECTS, PROBES, SUN } from './data/solarSystem.ts';
 import { SATELLITES } from './data/satellites.ts';
 import { satOffset } from './lib/satellites.ts';
 import { FAMOUS_STARS, STARS } from './data/stars.ts';
-import { LOCAL_GROUP, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, OBSERVABLE_UNIVERSE, STRUCTURES } from './data/deepSky.ts';
+import { LOCAL_GROUP, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
 
 export interface CatalogObject {
   id: string;
@@ -26,6 +26,8 @@ export interface CatalogObject {
   live?: boolean;
   /** Low Earth orbit: the camera rides along on the outward side, and the card shows altitude. */
   earthOrbit?: boolean;
+  /** Where "Fly to" puts the camera, as a unit vector from the object (scene frame). */
+  viewDir?: Vector3;
   /** World position in meters (heliocentric, scene frame). Returned vectors are shared: don't mutate. */
   pos: (t: Date) => Vector3;
 }
@@ -99,6 +101,13 @@ export const CATALOG: CatalogObject[] = [
   (() => {
     const p = galToScene(MILKY_WAY.sunDistKpc, 0, 0).multiplyScalar(KPC);
     return { ...MILKY_WAY, size: formatSize(MILKY_WAY.diameterKpc * KPC / 2), viewLogD: 21.05, minLogD: shown(6), pos: () => p };
+  })(),
+  (() => {
+    const p = galToScene(MILKY_WAY.sunDistKpc, 0, 0).multiplyScalar(KPC), rs = SGR_A.horizonKm * 1e3;
+    // The disk's true orientation isn't known, so it is drawn level (in the scene's XZ plane), which keeps
+    // it horizontal on screen. Arrive 7° above it, so its far side shows lifted over the shadow.
+    const viewDir = new Vector3(0, Math.sin(0.12), Math.cos(0.12));
+    return { ...SGR_A, viewDir, viewLogD: Math.log10(rs * 26), minLogD: Math.log10(rs * 6), pos: () => p };
   })(),
   ...LOCAL_GROUP.map((g) => {
     const p = galDir(g.l, g.b).multiplyScalar(g.distKpc * KPC);

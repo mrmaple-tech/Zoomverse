@@ -10,6 +10,7 @@ import { clock, sunWorld } from './materials.ts';
 import { Rig } from './Rig.tsx';
 import { K, Space } from './Space.tsx';
 import { Label } from './Label.tsx';
+import { BlackHole } from './BlackHole.tsx';
 import { EarthMoonLayer } from '../layers/EarthMoonLayer.tsx';
 import { InnerSolarLayer } from '../layers/InnerSolarLayer.tsx';
 import { OuterSolarLayer } from '../layers/OuterSolarLayer.tsx';
@@ -121,6 +122,7 @@ export function Universe() {
           <Space unit={KPC}><MilkyWayLayer /></Space>
           <Space unit={KPC}><LocalGroupLayer /></Space>
           <Space unit={MPC}><CosmicWebLayer /></Space>
+          <BlackHole />
         </>
       )}
       {/* no MSAA: it multiplies the cost of every point/additive pixel; dpr 1.5 + bloom keep edges soft */}

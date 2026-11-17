@@ -28,6 +28,8 @@ export const TOUR: TourStop[] = [
     text: 'The nearest star, Proxima Centauri, is 4.2 light-years away. Voyager 1 would need 73,000 years to get there.' },
   { focus: 'milky-way', logD: 21.05, viewGal: [180, 50], title: 'The Milky Way', hold: 7,
     text: 'Our galaxy: a few hundred billion stars in a disk 100,000 light-years wide. We orbit its center every 230 million years.' },
+  { focus: 'sgr-a', title: 'The black hole at the center', hold: 9,
+    text: 'Sagittarius A*: four million Suns of mass in a space smaller than Mercury\'s orbit. Its gravity bends light, so the far side of its glowing disk appears wrapped over the top.' },
   { focus: 'local-group', logD: 22.75, viewGal: [150, 35], title: 'The Local Group', hold: 7,
     text: 'Andromeda, 2.5 million light-years away, is falling toward us. The two galaxies will merge in about 4.5 billion years.' },
   { focus: 'milky-way', logD: 25.2, title: 'The cosmic web', hold: 7,

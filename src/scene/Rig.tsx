@@ -84,6 +84,7 @@ export function Rig() {
         flight.camFrom = camera.position.clone().normalize();
         // look down on a satellite from outside, never from inside the planet
         if (target.earthOrbit && !flight.viewDir) flight.viewDir = dest.clone().sub(get('earth').pos(date)).normalize();
+        flight.viewDir ??= target.viewDir;
         if (Number.isNaN(flight.toLogD)) flight.toLogD = target.viewLogD;
         flight.toLogD = Math.max(flight.toLogD, target.minLogD);
         flight.peak = Math.max(flight.fromLogD, flight.toLogD, Math.log10(flight.from.distanceTo(dest) + 1) + 0.45);

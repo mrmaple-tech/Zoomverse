@@ -4,6 +4,7 @@ import { HelioVector, Body } from 'astronomy-engine';
 import { eqjToScene, earthBasis, fade, AU, LY, MPC } from './coords.ts';
 import { scaleBar, lightTime, niceFloor } from './scale.ts';
 import { Vector3 } from 'three';
+import { deflection } from './geodesic.ts';
 import { addTles } from './satellites.ts';
 import { passes } from './passes.ts';
 
@@ -16,6 +17,12 @@ assert.match(scaleBar((300 * MPC) / 120).label, /^200 Mpc$/);
 assert.ok(scaleBar(1234).px <= 120);
 assert.equal(lightTime(AU), '8.3 light-minutes');
 assert.equal(lightTime(411e3), '1.4 light-milliseconds'); // ISS altitude
+
+// Light bending: far from a black hole a ray turns by 2 rs / b (Einstein's value); inside the
+// critical impact parameter 3√3/2 rs it is captured.
+assert.ok(Math.abs(deflection(200)! / (2 / 200) - 1) < 0.02);
+assert.equal(deflection(2.59), null);
+assert.notEqual(deflection(2.61), null);
 
 // Fade windows.
 assert.equal(fade(5, [0, 1, 8, 9]), 1);

@@ -15,6 +15,7 @@ npm test         # coordinate-frame and scale-bar checks (Node 22+)
 
 - **Eight zoom layers** from Earth to the edge of the observable universe, cross-fading as you scroll.
 - **Live solar system and satellites** at their real positions, with a time slider.
+- **A ray-traced black hole.** Search for *Sagittarius A\** (or "black hole") to fly to the center of the Milky Way. Each pixel's light path is integrated through the curved space around the hole, so the far side of the accretion disk arches over the shadow, the stars behind smear into an Einstein ring, and the side of the disk spinning toward you is brighter and bluer.
 - **Guided tour** (Tour button): an autopilot from Earth to the cosmic horizon and back, with captions.
 - **Moments in time** (time bar menu): jump to Apollo 11, the 2024 eclipse, the Great Conjunction and more.
 - **Satellite passes**: open a satellite's card and share your location to see when it next flies over, and which passes are visible to the eye.
@@ -39,6 +40,7 @@ Other ways to move around: the layer list jumps to each scale, the search box fl
 - **Floating origin.** World positions are float64 meters, heliocentric, with the ecliptic lying on the XZ plane. Each layer draws in its own local unit (AU, pc, kpc or Mpc) inside a `Space` group. Every frame that group is re-scaled and shifted so the focused object sits at the origin and the camera stays 10 units away. The numbers sent to the GPU therefore stay small at every scale, and nothing jitters.
 - **Layers.** There is one component per layer in `src/layers/`. Each layer has a trapezoid fade window over `logD` (`src/data/layers.ts`), so neighbouring layers cross-fade instead of cutting.
 - **Readable vs true scale.** In readable mode a body is drawn no smaller than a fixed fraction of the camera distance. In true scale it is drawn at its real radius.
+- **Black hole.** `src/scene/BlackHole.tsx` traces a light ray per pixel around a non-spinning (Schwarzschild) black hole; the integrator is mirrored and tested in `src/lib/geodesic.ts`. Rays that escape look up the real scene: this frame's picture where the bent ray is still on screen, and a six-sided capture taken from the hole otherwise.
 - **Performance.** Every star, particle and galaxy cloud is a single `THREE.Points` draw call. The asteroid belt orbits in the vertex shader. A layer that has faded out is skipped entirely.
 
 ## Project layout

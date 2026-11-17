@@ -18,6 +18,15 @@ export const MILKY_WAY = {
   fact: 'Our galaxy holds 100–400 billion stars. The Sun takes ~230 million years to orbit its center once.',
 };
 
+/** The black hole at the galactic center (4.3 million solar masses). */
+export const SGR_A = {
+  id: 'sgr-a', name: 'Sagittarius A* (black hole)', type: 'Supermassive black hole',
+  /** Radius of the event horizon. */
+  horizonKm: 12.7e6,
+  size: 'Event horizon 25 million km across, 18 Suns wide',
+  fact: 'Four million Suns of mass, at the center of our galaxy. Its gravity bends light: the far side of its glowing disk appears arched over the top and bottom of its shadow, and the side spinning toward you shines brightest. Gas at the inner edge circles at half the speed of light, once every 30 minutes (sped up here).',
+};
+
 export const LOCAL_GROUP: Galaxy[] = [
   { id: 'andromeda', name: 'Andromeda (M31)', type: 'Spiral galaxy', l: 121.17, b: -21.57, distKpc: 765, diameterKpc: 46, shape: 'spiral', tilt: [77, 0, 38],
     fact: 'Andromeda is heading toward us at ~110 km/s and will merge with the Milky Way in about 4.5 billion years.' },
