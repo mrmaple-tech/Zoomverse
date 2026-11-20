@@ -10,7 +10,7 @@ import { SATELLITES } from './data/satellites.ts';
 import { satOffset } from './lib/satellites.ts';
 import { FAMOUS_STARS, STARS } from './data/stars.ts';
 import { EXOMOONS, EXOPLANETS, HOST_RADIUS, exoOffset, exoType, moonOffset } from './data/exoplanets.ts';
-import { GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, NEBULAE, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
+import { GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, NEBULAE, NORMA, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
 
 export interface CatalogObject {
   id: string;
@@ -151,8 +151,14 @@ export const CATALOG: CatalogObject[] = [
   })(),
   ...STRUCTURES.map((s) => {
     const p = galDir(s.l, s.b).multiplyScalar(s.distMpc * MPC);
+    // the Great Attractor is a place you can fly into; the others are just marked on the cosmic web
+    if (s.id === 'great-attractor') return { ...s, size: formatSize((s.sizeMpc * MPC) / 2), viewLogD: Math.log10(s.sizeMpc * MPC * 1.3), minLogD: Math.log10(2 * MPC), pos: () => p };
     return { ...s, size: formatSize((s.sizeMpc * MPC) / 2), viewLogD: Math.max(shown(8), Math.log10(s.sizeMpc * MPC * 4)), minLogD: shown(8), pos: () => p };
   }),
+  (() => {
+    const dir = galDir(NORMA.l, NORMA.b), p = dir.clone().multiplyScalar(NORMA.distMpc * MPC);
+    return { ...NORMA, size: formatSize((NORMA.sizeMpc * MPC) / 2), viewLogD: Math.log10(NORMA.sizeMpc * MPC * 1.1), minLogD: Math.log10(0.3 * MPC), viewDir: dir.negate(), pos: () => p };
+  })(),
   { ...OBSERVABLE_UNIVERSE, size: formatSize(OBSERVABLE_UNIVERSE.radiusMpc * MPC), viewLogD: 26.85, minLogD: shown(8), pos: () => ORIGIN },
 ];
 

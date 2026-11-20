@@ -1,6 +1,6 @@
 // A procedural object you can fly to and explore (galaxy, nebula): a light point cloud for viewing
 // from afar, replaced by a far denser one the first time you fly to it.
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Quaternion } from 'three';
 import { useStore } from '../store.ts';
 import type { Fade } from '../data/layers.ts';
@@ -25,9 +25,11 @@ interface Props {
   size: [number, number];
   /** From afar a soft halo stands in for the object's light; up close its own haze does that. */
   glow?: { size: number; color: string };
+  /** Extra content placed with it (same position). */
+  children?: ReactNode;
 }
 
-export function Inspectable({ id, name, window, label, position, quaternion, coarse, fine, size, glow }: Props) {
+export function Inspectable({ id, name, window, label, position, quaternion, coarse, fine, size, glow, children }: Props) {
   const focused = useStore((s) => s.focusId === id || s.flight?.to === id);
   const [detail, setDetail] = useState(false);
   if (focused && !detail) setDetail(true);
@@ -40,6 +42,7 @@ export function Inspectable({ id, name, window, label, position, quaternion, coa
           {near ? <PointCloud geometry={near} worldSize={size[1]} /> : far && <PointCloud geometry={far} worldSize={size[0]} />}
         </group>
         {glow && !near && <Glow size={glow.size} color={glow.color} opacity={0.7} />}
+        {children}
         <Label id={id} text={name} window={label} />
       </group>
     </Fader>

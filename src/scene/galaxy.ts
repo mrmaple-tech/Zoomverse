@@ -89,12 +89,12 @@ export function addSpiral(c: Cloud, { count, radius: R, arms = 4, pitchDeg = 13,
 }
 
 /** Elliptical galaxy: a dense core fading into a wide halo of old stars, with globular clusters; optional dust lane and jet. */
-export function addElliptical(c: Cloud, { count, radius: R, axis = 0.75, cx = 0, cy = 0, seed = 1, bright = 1, lane = 0, jet = 0 }: {
-  count: number; radius: number; axis?: number; cx?: number; cy?: number; seed?: number; bright?: number; lane?: number; jet?: number;
+export function addElliptical(c: Cloud, { count, radius: R, axis = 0.75, cx = 0, cy = 0, cz = 0, seed = 1, bright = 1, lane = 0, jet = 0 }: {
+  count: number; radius: number; axis?: number; cx?: number; cy?: number; cz?: number; seed?: number; bright?: number; lane?: number; jet?: number;
 }) {
   const r = rng(seed), a = R * 0.12;
   const push = (x: number, y: number, z: number, col: RGB, b: number, size: number) =>
-    c.push(x + cx, y + cy, z, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, size);
+    c.push(x + cx, y + cy, z + cz, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, size);
   for (let i = 0; i < count; i++) {
     const u = Math.sqrt(r() * 0.97), d = (a * u) / (1 - u); // Hernquist profile
     if (d > R) { i--; continue; } // resample rather than pile the tail up into a hard edge
@@ -111,8 +111,8 @@ export function addElliptical(c: Cloud, { count, radius: R, axis = 0.75, cx = 0,
     push(d * s * Math.cos(ph), d * s * Math.sin(ph), d * cz * axis, OLD, 0.9, 1.7);
   }
   haze(c, r, count * 0.04, () => {
-    const d = Math.abs(gauss(r)) * R * 0.18, cz = r() * 2 - 1, ph = r() * TAU, s = Math.sqrt(1 - cz * cz);
-    return [d * s * Math.cos(ph) + cx, d * s * Math.sin(ph) + cy, d * cz * axis, CORE, 0.08 * bright];
+    const d = Math.abs(gauss(r)) * R * 0.18, cz0 = r() * 2 - 1, ph = r() * TAU, s = Math.sqrt(1 - cz0 * cz0);
+    return [d * s * Math.cos(ph) + cx, d * s * Math.sin(ph) + cy, d * cz0 * axis + cz, CORE, 0.08 * bright];
   });
   // relativistic jet along the pole: a narrow blue-white beam with bright knots
   for (let i = 0; i < count * 0.012 * Math.sign(jet); i++) {
@@ -235,4 +235,69 @@ export function addMerger(c: Cloud, { count, radius: R, seed = 1, bright = 1 }: 
     const a = (side > 0 ? 0 : Math.PI) + side * (0.4 + t * 2.3), d = R * (0.2 + 0.8 * t), w = R * (0.012 + 0.035 * t);
     push(d * Math.cos(a) + gauss(r) * w, d * Math.sin(a) * 0.75 + gauss(r) * w, gauss(r) * w * 0.5, mix(YOUNG, OLD, r()), (0.22 + r() * 0.3) * (1 - 0.65 * t), 1 + r());
   }
+}
+
+/** A galaxy cluster: a giant central elliptical, thousands of galaxies thickening toward the core
+ * (red ellipticals inside, blue spirals outside) and the faint glow of the hot gas filling it. Each galaxy
+ * is a small fuzzy clump of points, so zooming in resolves them as blobs, flat disks or round balls. */
+export function addCluster(c: Cloud, { count, radius: R, seed = 1, bright = 1, cx = 0, cy = 0, cz = 0, jellyfish = 0 }: {
+  count: number; radius: number; seed?: number; bright?: number; cx?: number; cy?: number; cz?: number; jellyfish?: number;
+}) {
+  const r = rng(seed), rc = R * 0.12;
+  const push = (x: number, y: number, z: number, col: RGB, b: number, size: number) =>
+    c.push(x + cx, y + cy, z + cz, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, size);
+  const dir = () => { const z = r() * 2 - 1, p = r() * TAU, s = Math.sqrt(1 - z * z); return [s * Math.cos(p), s * Math.sin(p), z]; };
+  // big galaxies are rarer but get more stars, so up close they resolve as fuzzy shapes (~23 points each on average)
+  const galaxies = Math.round((count * 0.8) / 23);
+  for (let g = 0; g < galaxies; g++) {
+    const big = r() ** 3, per = 8 + Math.round(big * 60);
+    const u = r() * 0.96, d = Math.min(R, rc * Math.sqrt(u / (1 - u))); // King-like profile
+    const [ux, uy, uz] = dir(), gx = ux * d, gy = uy * d, gz = uz * d;
+    const red = r() < 0.85 - (0.6 * d) / R; // ellipticals dominate the core
+    const size = R * 0.004 * (0.5 + big * 2.5);
+    // a random disk orientation for spirals
+    const [ax, ay, az] = dir(), [bx0, by0, bz0] = dir();
+    const k = ax * bx0 + ay * by0 + az * bz0, bx = bx0 - k * ax, by = by0 - k * ay, bz = bz0 - k * az, bl = Math.hypot(bx, by, bz) || 1;
+    for (let i = 0; i < per; i++) {
+      const s = i === 0 ? 0 : size * Math.abs(gauss(r));
+      if (red) push(gx + gauss(r) * s * 0.6, gy + gauss(r) * s * 0.6, gz + gauss(r) * s * 0.6, mix(CORE, OLD, r()), i ? 0.2 : 0.6 + big, i ? 1.2 : 1.6 + big * 2);
+      else {
+        const a = r() * TAU, w = Math.cos(a) * s, v = Math.sin(a) * s;
+        push(gx + ax * w + (bx / bl) * v, gy + ay * w + (by / bl) * v, gz + az * w + (bz / bl) * v, i ? YOUNG : CORE, i ? 0.18 : 0.5 + big, i ? 1.1 : 1.4 + big * 2);
+      }
+    }
+  }
+  // the brightest cluster galaxy: a giant elliptical sitting at the bottom of the cluster's gravity well
+  addElliptical(c, { count: Math.round(count * 0.06), radius: R * 0.05, axis: 0.8, cx, cy, cz, seed: seed + 3, bright: bright * 0.45 });
+  // hot intracluster gas (seen in X-rays): a faint violet glow, brightest in the middle
+  for (let i = 0; i < count * 0.06; i++) {
+    const [ux, uy, uz] = dir(), d = Math.abs(gauss(r)) * R * 0.3;
+    push(ux * d, uy * d, uz * d, [0.55, 0.5, 1], 0.035, 9 + r() * 5);
+  }
+  // a "jellyfish" galaxy plunging through the gas, its stripped gas trailing behind as a blue tail
+  if (jellyfish) {
+    const [ux, uy, uz] = dir(), d = R * 0.3, x0 = ux * d, y0 = uy * d, z0 = uz * d;
+    for (let i = 0; i < 400; i++) push(x0 + gauss(r) * R * 0.003, y0 + gauss(r) * R * 0.003, z0 + gauss(r) * R * 0.003, CORE, 0.5, 1.3);
+    for (let i = 0; i < 1500; i++) {
+      const t = r() ** 0.7, w = R * (0.002 + 0.01 * t);
+      push(x0 + ux * t * R * 0.08 + gauss(r) * w, y0 + uy * t * R * 0.08 + gauss(r) * w, z0 + uz * t * R * 0.08 + gauss(r) * w, [0.45, 0.65, 1], 0.4 * (1 - t), 1.2);
+    }
+  }
+}
+
+/** A supercluster region: several clusters (x, y, z, radius, share of points), the filaments of galaxies
+ * joining each to the first (the heaviest), and a thin haze of field galaxies around them. */
+export function addSupercluster(c: Cloud, { count, radius: R, seed = 1, bright = 1, clusters }: {
+  count: number; radius: number; seed?: number; bright?: number; clusters: number[];
+}) {
+  const r = rng(seed), k: number[][] = [];
+  for (let i = 0; i < clusters.length; i += 5) k.push(clusters.slice(i, i + 5));
+  k.forEach(([x, y, z, cr, share], i) => addCluster(c, { count: Math.round(count * share), radius: cr, seed: seed + i * 13, bright, cx: x, cy: y, cz: z }));
+  const push = (x: number, y: number, z: number, col: RGB, b: number) => c.push(x, y, z, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, 1 + r());
+  const [hub] = k;
+  for (const [x, y, z] of k.slice(1)) for (let i = 0; i < count * 0.05; i++) {
+    const t = r(), s = R * 0.02 * (0.4 + 4 * t * (1 - t)); // filaments fatten between their ends
+    push(hub[0] + (x - hub[0]) * t + gauss(r) * s, hub[1] + (y - hub[1]) * t + gauss(r) * s, hub[2] + (z - hub[2]) * t + gauss(r) * s, mix(YOUNG, OLD, r()), 0.35);
+  }
+  for (let i = 0; i < count * 0.12; i++) push(gauss(r) * R * 0.45, gauss(r) * R * 0.45, gauss(r) * R * 0.45, mix(YOUNG, OLD, r()), 0.25);
 }

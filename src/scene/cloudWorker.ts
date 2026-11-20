@@ -1,10 +1,10 @@
 // Builds procedural point clouds (galaxies, nebulae, the cosmic web) off the main thread, so generating
 // a 160k-star galaxy never stalls a frame. Each request is a list of generator steps into one cloud.
 import { cloud, type Cloud } from './cloud.ts';
-import { addElliptical, addIrregular, addMerger, addRing, addSpiral, web } from './galaxy.ts';
+import { addCluster, addElliptical, addIrregular, addMerger, addRing, addSpiral, addSupercluster, web } from './galaxy.ts';
 import { addEmission, addPlanetary, addRemnant } from './nebula.ts';
 
-type Opts = Record<string, number>;
+type Opts = Record<string, number | number[]>;
 const GEN: Record<string, (c: Cloud, o: Opts) => void> = {
   spiral: (c, o) => addSpiral(c, o as Parameters<typeof addSpiral>[1]),
   elliptical: (c, o) => addElliptical(c, o as Parameters<typeof addElliptical>[1]),
@@ -14,7 +14,9 @@ const GEN: Record<string, (c: Cloud, o: Opts) => void> = {
   emission: (c, o) => addEmission(c, o as Parameters<typeof addEmission>[1]),
   planetary: (c, o) => addPlanetary(c, o as Parameters<typeof addPlanetary>[1]),
   remnant: (c, o) => addRemnant(c, o as Parameters<typeof addRemnant>[1]),
-  web: (c, o) => web(c, o.seed, o.nodes, o.rMin, o.rMax, o.scatter, o.perLink, o.perNode),
+  cluster: (c, o) => addCluster(c, o as Parameters<typeof addCluster>[1]),
+  supercluster: (c, o) => addSupercluster(c, o as Parameters<typeof addSupercluster>[1]),
+  web: (c, o) => { const n = o as Record<string, number>; web(c, n.seed, n.nodes, n.rMin, n.rMax, n.scatter, n.perLink, n.perNode); },
 };
 
 self.onmessage = ({ data: { id, steps } }: MessageEvent<{ id: number; steps: { gen: string; opts: Opts }[] }>) => {

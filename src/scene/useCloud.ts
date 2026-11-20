@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { BufferAttribute, BufferGeometry } from 'three';
 import type { CloudArrays } from './cloud.ts';
 
-export type CloudStep = { gen: string; opts: Record<string, number> };
+export type CloudStep = { gen: string; opts: Record<string, number | number[]> };
 
 let worker: Worker | undefined;
 let nextId = 0;
