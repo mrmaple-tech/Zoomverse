@@ -10,7 +10,7 @@ import { SATELLITES } from './data/satellites.ts';
 import { satOffset } from './lib/satellites.ts';
 import { FAMOUS_STARS, STARS } from './data/stars.ts';
 import { EXOMOONS, EXOPLANETS, HOST_RADIUS, exoOffset, exoType, moonOffset } from './data/exoplanets.ts';
-import { GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, NEBULAE, NORMA, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES, SUPERCLUSTERS, superclusterLayout } from './data/deepSky.ts';
+import { BLACK_HOLES, GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, NEBULAE, NORMA, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES, SUPERCLUSTERS, horizonM, superclusterLayout } from './data/deepSky.ts';
 
 export interface CatalogObject {
   id: string;
@@ -154,6 +154,16 @@ export const CATALOG: CatalogObject[] = [
     // the Great Attractor is a place you can fly into; the others are just marked on the cosmic web
     if (s.id === 'great-attractor') return { ...s, size: formatSize((s.sizeMpc * MPC) / 2), viewLogD: Math.log10(s.sizeMpc * MPC * 1.3), minLogD: Math.log10(2 * MPC), pos: () => p };
     return { ...s, size: formatSize((s.sizeMpc * MPC) / 2), viewLogD: Math.max(shown(8), Math.log10(s.sizeMpc * MPC * 4)), minLogD: shown(8), pos: () => p };
+  }),
+  ...BLACK_HOLES.map((h) => {
+    const rs = horizonM(h.solarMasses);
+    const g = h.host ? GALAXIES.find((x) => x.id === h.host)! : null;
+    const p = g ? galDir(g.l, g.b).multiplyScalar(g.distKpc * KPC) : radecDir(h.ra!, h.dec!).multiplyScalar(h.distPc! * PC);
+    // arrive 7° above the disk, like Sagittarius A*, so its far side shows arched over the shadow
+    return {
+      id: h.id, name: h.name, type: h.type, fact: h.fact, host: h.host, size: `Event horizon ${formatSize(rs).replace(' across', '')} across`,
+      viewDir: new Vector3(0, Math.sin(0.12), Math.cos(0.12)), viewLogD: Math.log10(rs * 26), minLogD: Math.log10(rs * 6), pos: () => p,
+    };
   }),
   ...SUPERCLUSTERS.map((s) => {
     const p = new Vector3(...superclusterLayout(s, galDir).center).multiplyScalar(MPC), D = s.sizeMpc * MPC;

@@ -6,6 +6,7 @@ import { useFrame } from '@react-three/fiber';
 import type { Group, Material, Mesh, Object3D, ShaderMaterial } from 'three';
 import { useStore } from '../store.ts';
 import { fade } from '../lib/coords.ts';
+import { byId } from '../catalog.ts';
 import type { Fade } from '../data/layers.ts';
 
 export const K = 10;
@@ -19,6 +20,12 @@ export function Space({ unit, children }: { unit: number; children: ReactNode })
   return <group ref={ref}>{children}</group>;
 }
 
+/** You're at `id`: focused on it, flying to it, or at something it hosts (a galaxy's central black hole). */
+export function atObject(id: string, s: { focusId: string | null; flight: { to: string } | null }) {
+  const f = s.flight?.to ?? s.focusId;
+  return !!f && (f === id || byId.get(f)?.host === id);
+}
+
 /**
  * Cross-fade everything under `ref` by the zoom window; hides it entirely when faded out.
  * With `id`, it stays fully shown while that object is focused or being flown to (closer than the window's end).
@@ -26,7 +33,7 @@ export function Space({ unit, children }: { unit: number; children: ReactNode })
 export function useFade(window: Fade, ref: RefObject<Object3D>, id?: string) {
   useFrame(() => {
     const s = useStore.getState();
-    const o = id && (s.focusId === id || s.flight?.to === id) && s.logD < window[2] ? 1 : fade(s.logD, window);
+    const o = id && atObject(id, s) && s.logD < window[2] ? 1 : fade(s.logD, window);
     const root = ref.current;
     if (!root) return;
     root.userData.fade = o;

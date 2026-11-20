@@ -1,4 +1,4 @@
-// Sagittarius A*, ray-traced. Every pixel's light path is integrated through the curved space around
+// Black holes, ray-traced (Sagittarius A* and the others in BLACK_HOLES). Every pixel's light path is integrated through the curved space around
 // the hole (the integrator in lib/geodesic.ts). Along the way the ray picks up the glowing accretion
 // disk each time it crosses the disk plane, and where it finally escapes it shows whatever part of the
 // real scene lies in that direction. So the far side of the disk arches over the shadow and the stars
@@ -9,9 +9,10 @@ import {
   BackSide, CubeCamera, HalfFloatType, Matrix4, ShaderMaterial, Vector2, Vector3,
   WebGLCubeRenderTarget, WebGLRenderTarget, type Group, type Mesh, type Points,
 } from 'three';
-import { SGR_A } from '../data/deepSky.ts';
+import { BLACK_HOLES, GALAXIES, SGR_A, horizonM } from '../data/deepSky.ts';
+import type { Fade } from '../data/layers.ts';
 import { get } from '../catalog.ts';
-import { galDir, gauss, rng } from '../lib/coords.ts';
+import { KPC, galDir, gauss, rng } from '../lib/coords.ts';
 import { MAX_STEPS, STEP } from '../lib/geodesic.ts';
 import { starColor } from '../lib/stars.ts';
 import { useStore } from '../store.ts';
@@ -20,7 +21,6 @@ import { pointsMaterial } from './materials.ts';
 import { cloud } from './PointCloud.tsx';
 import { K } from './Space.tsx';
 
-const RS = SGR_A.horizonKm * 1e3;
 /** Space is treated as flat beyond this many horizon radii, where light bends by under 2°. */
 const LENS = 50;
 /** The background stars sit on a shell about this far from the scene origin (drei's <Stars> and ours). */
@@ -33,7 +33,7 @@ const material = () => new ShaderMaterial({
   transparent: true, depthTest: false, depthWrite: false, side: BackSide,
   uniforms: {
     uScene: { value: null }, uSky: { value: null }, uProj: { value: new Matrix4() },
-    uCam: { value: new Vector3() }, uCenter: { value: new Vector3() }, uRs: { value: 1 }, uTime: { value: 0 }, uOpacity: { value: 1 },
+    uCam: { value: new Vector3() }, uCenter: { value: new Vector3() }, uRs: { value: 1 }, uTime: { value: 0 }, uOpacity: { value: 1 }, uDisk: { value: 1 },
   },
   vertexShader: /* glsl */ `
     varying vec3 vW;
@@ -44,7 +44,7 @@ const material = () => new ShaderMaterial({
   // Rays are traced with the hole at the origin and lengths in horizon radii; the disk lies in the XZ plane.
   fragmentShader: /* glsl */ `
     uniform sampler2D uScene; uniform samplerCube uSky; uniform mat4 uProj;
-    uniform vec3 uCam, uCenter; uniform float uRs, uTime, uOpacity;
+    uniform vec3 uCam, uCenter; uniform float uRs, uTime, uOpacity, uDisk;
     varying vec3 vW;
     const float LENS = ${f(LENS)}, STEP = ${f(STEP)}, SKY_R = ${f(SKY_R)};
     const float R_IN = 3.0, R_OUT = 13.0;   // innermost stable orbit, and where the disk thins out
@@ -133,7 +133,7 @@ const material = () => new ShaderMaterial({
           float dt = STEP * sqrt(r2);
           v += a * (dt * 0.5);
           vec3 q = p + v * dt;
-          if (p.y * q.y < 0.0 && lit.a < 0.995) lit += (1.0 - lit.a) * disk(mix(p, q, p.y / (p.y - q.y)), v, 1.0 / well);
+          if (uDisk > 0.5 && p.y * q.y < 0.0 && lit.a < 0.995) lit += (1.0 - lit.a) * disk(mix(p, q, p.y / (p.y - q.y)), v, 1.0 / well);
           p = q;
           a = -1.5 * h2 * p / pow(dot(p, p), 2.5);
           v += a * (dt * 0.5);
@@ -160,8 +160,18 @@ function coreSky() {
   return c.build();
 }
 
-export function BlackHole() {
-  const mesh = useRef<Mesh>(null!), label = useRef<Group>(null!), stars = useRef<Points>(null!);
+interface Props {
+  id: string;
+  /** Event-horizon radius, meters. */
+  rs: number;
+  disk?: boolean;
+  /** The packed stars of a galactic core all around (Sagittarius A*). */
+  coreSky?: boolean;
+}
+
+/** One ray-traced black hole. Costly (it re-renders the scene behind it), so others mount only while visited. */
+export function BlackHole({ id, rs: RS, disk = true, coreSky: crowded = false }: Props) {
+  const mesh = useRef<Mesh>(null!), stars = useRef<Points>(null!);
   const g = useMemo(() => {
     // drawn like every other shader here; the tone mapping lines make it match drei's <Stars> when it is re-photographed below
     const skyMat = pointsMaterial(0);
@@ -177,12 +187,12 @@ export function BlackHole() {
 
   useFrame(({ gl, scene, camera }, dt) => {
     const s = useStore.getState(), k = K / 10 ** s.logD, u = g.mat.uniforms;
-    const pos = get(SGR_A.id).pos(new Date(0));
+    const pos = get(id).pos(new Date(0));
     g.center.copy(pos).sub(s.focus).multiplyScalar(k);
-    label.current.position.copy(g.center);
+    u.uDisk.value = disk ? 1 : 0;
 
     // the crowded sky only exists within a few light-years of the center
-    const near = 1 - smooth(16, 17, Math.log10(pos.distanceTo(s.focus) + 10 ** s.logD));
+    const near = crowded ? 1 - smooth(16, 17, Math.log10(pos.distanceTo(s.focus) + 10 ** s.logD)) : 0;
     g.skyMat.uniforms.uOpacity.value = near;
     stars.current.visible = near > 0.003;
 
@@ -223,10 +233,44 @@ export function BlackHole() {
       <mesh ref={mesh} material={g.mat} visible={false} renderOrder={10}>
         <icosahedronGeometry args={[1, 3]} />
       </mesh>
-      <group ref={label}>
-        {/* marked from the edge of the galaxy inward, then out of the way once the hole itself fills the view */}
-        <Label id={SGR_A.id} text="Black hole" variant="marker" window={[12.4, 13, 21.6, 22.2]} shown={() => useStore.getState().logD > 12.4} />
-      </group>
+    </>
+  );
+}
+
+/** A "Black hole" marker that follows a black hole through the floating origin. */
+function Marker({ id, window, near }: { id: string; window: Fade; near: number }) {
+  const ref = useRef<Group>(null!);
+  useFrame(() => {
+    const s = useStore.getState();
+    ref.current.position.copy(get(id).pos(new Date(0))).sub(s.focus).multiplyScalar(K / 10 ** s.logD);
+  });
+  // out of the way once the hole itself fills the view
+  return <group ref={ref}><Label id={id} text={id === SGR_A.id ? 'Black hole' : get(id).name} variant="marker" window={window} shown={() => useStore.getState().logD > near} /></group>;
+}
+
+/** Visited black hole: the one you're at or flying to (Sagittarius A* is always there). */
+function Visited() {
+  const at = useStore((s) => {
+    const f = s.flight?.to ?? s.focusId;
+    return BLACK_HOLES.find((h) => h.id === f) ?? null;
+  });
+  return at ? <BlackHole key={at.id} id={at.id} rs={horizonM(at.solarMasses)} disk={at.disk} /> : null;
+}
+
+export function BlackHoles() {
+  return (
+    <>
+      <BlackHole id={SGR_A.id} rs={SGR_A.horizonKm * 1e3} coreSky />
+      <Visited />
+      {/* marked from the edge of the galaxy inward */}
+      <Marker id={SGR_A.id} window={[12.4, 13, 21.6, 22.2]} near={12.4} />
+      {BLACK_HOLES.map((h) => {
+        const rs = horizonM(h.solarMasses), host = GALAXIES.find((x) => x.id === h.host);
+        // galaxy holes show while you look at their galaxy, stellar ones around the nearby-stars scale,
+        // TON 618 out on the cosmic web
+        const top = host ? Math.log10(host.diameterKpc * KPC * 1.5) : h.id === 'ton-618' ? 26 : 18;
+        return <Marker key={h.id} id={h.id} window={[Math.log10(rs * 40), Math.log10(rs * 80), top, top + 0.5]} near={Math.log10(rs * 30)} />;
+      })}
     </>
   );
 }

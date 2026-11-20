@@ -251,6 +251,35 @@ export function superclusterLayout(s: Supercluster, galDir: (l: number, b: numbe
 }
 type Vec3 = { x: number; y: number; z: number };
 
+/**
+ * Black holes you can fly up to. Galaxy-centered ones sit at their host galaxy's position; the others
+ * have their own (RA hours, Dec degrees, distance in pc). Event-horizon radius = 2.95 km per solar mass.
+ */
+export interface BlackHoleInfo {
+  id: string; name: string; type: string; solarMasses: number;
+  host?: string; ra?: number; dec?: number; distPc?: number;
+  /** Dormant black holes have no glowing disk: just the bent light around the shadow. */
+  disk: boolean;
+  fact: string;
+}
+export const BLACK_HOLES: BlackHoleInfo[] = [
+  { id: 'm87-bh', name: 'M87* (black hole)', type: 'Supermassive black hole', solarMasses: 6.5e9, host: 'm87', disk: true,
+    fact: 'The first black hole ever photographed, by the Event Horizon Telescope in 2019. At 6.5 billion times the Sun\'s mass, its event horizon is wider than the orbit of Neptune.' },
+  { id: 'm31-bh', name: 'M31* (Andromeda\'s black hole)', type: 'Supermassive black hole', solarMasses: 1.4e8, host: 'andromeda', disk: true,
+    fact: 'About 140 million Suns, some 30 times heavier than the Milky Way\'s, surrounded by an unusual disk of young blue stars.' },
+  { id: 'cen-a-bh', name: 'Centaurus A* (black hole)', type: 'Supermassive black hole', solarMasses: 5.5e7, host: 'centaurus-a', disk: true,
+    fact: 'About 55 million Suns. It feeds on gas from a swallowed galaxy and blasts out jets a million light-years long; the Event Horizon Telescope imaged their base in 2021.' },
+  { id: 'ton-618', name: 'TON 618', type: 'Ultramassive black hole (quasar)', solarMasses: 6.6e10, ra: 12.4736, dec: 31.4772, distPc: 5.6e9, disk: true,
+    fact: 'One of the most massive black holes known, about 66 billion Suns. The gas swirling into it shines brighter than 100 trillion Suns; its light has traveled 10.8 billion years to reach us.' },
+  { id: 'cygnus-x1', name: 'Cygnus X-1', type: 'Stellar black hole', solarMasses: 21, ra: 19.9727, dec: 35.2017, distPc: 2220, disk: true,
+    fact: 'The first object widely accepted as a black hole (1972): 21 Suns\' worth of collapsed star, pulling gas off the blue supergiant it orbits every 5.6 days.' },
+  { id: 'gaia-bh1', name: 'Gaia BH1', type: 'Dormant stellar black hole', solarMasses: 9.6, ra: 17.4781, dec: -0.5811, distPc: 480, disk: false,
+    fact: 'The nearest known black hole, about 1,560 light-years away. It\'s dormant: no glowing disk, just a Sun-like star circling it every 186 days.' },
+  { id: 'gaia-bh3', name: 'Gaia BH3', type: 'Dormant stellar black hole', solarMasses: 33, ra: 19.6553, dec: 14.9317, distPc: 590, disk: false,
+    fact: 'The heaviest stellar black hole known in the Milky Way, 33 Suns, found in 2024 from the wobble of the old star orbiting it.' },
+];
+export const horizonM = (solarMasses: number) => solarMasses * 2953;
+
 export const NORMA = {
   id: 'norma-cluster', name: 'Norma Cluster', type: 'Galaxy cluster (Abell 3627)', l: 325.3, b: -7.26, distMpc: 68, sizeMpc: 4,
   fact: 'A massive cluster of thousands of galaxies near the heart of the Great Attractor, so hidden by the Milky Way\'s dust that it was mapped mostly in X-rays and radio. One of its galaxies, ESO 137-001, trails a tail of stripped gas over 200,000 light-years long as it plunges through the cluster\'s hot gas.',

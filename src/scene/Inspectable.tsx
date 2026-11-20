@@ -6,7 +6,7 @@ import { useStore } from '../store.ts';
 import type { Fade } from '../data/layers.ts';
 import { Label } from './Label.tsx';
 import { Glow } from './Glow.tsx';
-import { Fader } from './Space.tsx';
+import { Fader, atObject } from './Space.tsx';
 import { PointCloud } from './PointCloud.tsx';
 import { useCloud, type CloudStep } from './useCloud.ts';
 
@@ -30,7 +30,7 @@ interface Props {
 }
 
 export function Inspectable({ id, name, window, label, position, quaternion, coarse, fine, size, glow, children }: Props) {
-  const focused = useStore((s) => s.focusId === id || s.flight?.to === id);
+  const focused = useStore((s) => atObject(id, s));
   const [detail, setDetail] = useState(false);
   if (focused && !detail) setDetail(true);
   const far = useCloud(coarse);
