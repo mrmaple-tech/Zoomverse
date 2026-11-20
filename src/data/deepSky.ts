@@ -5,9 +5,13 @@ export interface Galaxy {
   /** Galactic longitude/latitude (deg) and distance (kpc) from the Sun. */
   l: number; b: number; distKpc: number;
   diameterKpc: number;
-  shape: 'spiral' | 'irregular';
-  /** Disk tilt (Euler XYZ, degrees) for the procedural cloud. */
-  tilt: [number, number, number];
+  shape: 'spiral' | 'irregular' | 'elliptical';
+  /** Disk inclination to our line of sight (0 = face-on, 90 = edge-on) and its position angle, degrees. */
+  incl: number; pa: number;
+  /** Extra generator options (arms, pitch, bulge, dust lane, jet…), see scene/galaxy.ts. */
+  opts?: Record<string, number>;
+  /** Which zoom range labels it: Local Group giants, the Magellanic Clouds, Andromeda's moons, or beyond. */
+  zone: 'local' | 'mc' | 'm31' | 'far';
   fact: string;
 }
 
@@ -27,15 +31,43 @@ export const SGR_A = {
   fact: 'Four million Suns of mass, at the center of our galaxy. Its gravity bends light: the far side of its glowing disk appears arched over the top and bottom of its shadow, and the side spinning toward you shines brightest. Gas at the inner edge circles at half the speed of light, once every 30 minutes (sped up here).',
 };
 
-export const LOCAL_GROUP: Galaxy[] = [
-  { id: 'andromeda', name: 'Andromeda (M31)', type: 'Spiral galaxy', l: 121.17, b: -21.57, distKpc: 765, diameterKpc: 46, shape: 'spiral', tilt: [77, 0, 38],
+export const GALAXIES: Galaxy[] = [
+  { id: 'andromeda', name: 'Andromeda (M31)', type: 'Spiral galaxy', l: 121.17, b: -21.57, distKpc: 765, diameterKpc: 46, shape: 'spiral', incl: 77, pa: 38,
+    opts: { arms: 2, pitchDeg: 9, bulge: 0.14 }, zone: 'local',
     fact: 'Andromeda is heading toward us at ~110 km/s and will merge with the Milky Way in about 4.5 billion years.' },
-  { id: 'triangulum', name: 'Triangulum (M33)', type: 'Spiral galaxy', l: 133.61, b: -31.33, distKpc: 840, diameterKpc: 18.7, shape: 'spiral', tilt: [55, 0, 20],
+  { id: 'triangulum', name: 'Triangulum (M33)', type: 'Spiral galaxy', l: 133.61, b: -31.33, distKpc: 840, diameterKpc: 18.7, shape: 'spiral', incl: 55, pa: 23,
+    opts: { arms: 4, pitchDeg: 20, bulge: 0.03 }, zone: 'local',
     fact: 'Under very dark skies, Triangulum is the most distant object most people can see with the naked eye.' },
-  { id: 'lmc', name: 'Large Magellanic Cloud', type: 'Irregular dwarf galaxy', l: 280.47, b: -32.89, distKpc: 50, diameterKpc: 9.9, shape: 'irregular', tilt: [30, 0, 0],
+  { id: 'lmc', name: 'Large Magellanic Cloud', type: 'Irregular dwarf galaxy', l: 280.47, b: -32.89, distKpc: 50, diameterKpc: 9.9, shape: 'irregular', incl: 35, pa: 150,
+    opts: { stretch: 1.4 }, zone: 'mc',
     fact: 'Home of supernova 1987A, the closest supernova seen since the invention of the telescope.' },
-  { id: 'smc', name: 'Small Magellanic Cloud', type: 'Irregular dwarf galaxy', l: 302.8, b: -44.3, distKpc: 62, diameterKpc: 5.8, shape: 'irregular', tilt: [60, 0, 40],
+  { id: 'smc', name: 'Small Magellanic Cloud', type: 'Irregular dwarf galaxy', l: 302.8, b: -44.3, distKpc: 62, diameterKpc: 5.8, shape: 'irregular', incl: 60, pa: 45,
+    opts: { stretch: 1.8 }, zone: 'mc',
     fact: 'Ferdinand Magellan\'s crew described both Magellanic Clouds during their 1519 voyage.' },
+  { id: 'm32', name: 'M32', type: 'Compact elliptical galaxy', l: 121.15, b: -21.98, distKpc: 763, diameterKpc: 2, shape: 'elliptical', incl: 50, pa: 170,
+    opts: { axis: 0.8 }, zone: 'm31',
+    fact: 'A small, dense satellite of Andromeda, probably the stripped core of a bigger galaxy that Andromeda tore apart.' },
+  { id: 'm110', name: 'M110', type: 'Dwarf elliptical galaxy', l: 120.72, b: -21.14, distKpc: 824, diameterKpc: 5, shape: 'elliptical', incl: 70, pa: 165,
+    opts: { axis: 0.5 }, zone: 'm31',
+    fact: 'A companion of Andromeda that, unusually for an elliptical, still holds patches of dust and young stars.' },
+  { id: 'centaurus-a', name: 'Centaurus A', type: 'Elliptical galaxy with an active black hole', l: 309.52, b: 19.42, distKpc: 3800, diameterKpc: 18, shape: 'elliptical', incl: 88, pa: 20,
+    opts: { axis: 0.85, lane: 2 }, zone: 'far',
+    fact: 'A dark lane of dust from a spiral galaxy it swallowed crosses its middle, and its black hole blasts out radio jets a million light-years long.' },
+  { id: 'cigar', name: 'Cigar Galaxy (M82)', type: 'Starburst galaxy', l: 141.41, b: 40.57, distKpc: 3600, diameterKpc: 12, shape: 'irregular', incl: 82, pa: 65,
+    opts: { stretch: 2, outflow: 0.15 }, zone: 'far',
+    fact: 'It forms stars about 10 times faster than the Milky Way, and winds from all those young stars blow red plumes of gas out of its disk.' },
+  { id: 'pinwheel', name: 'Pinwheel Galaxy (M101)', type: 'Spiral galaxy', l: 102.04, b: 59.77, distKpc: 6400, diameterKpc: 52, shape: 'spiral', incl: 18, pa: 40,
+    opts: { arms: 5, pitchDeg: 24, bulge: 0.03 }, zone: 'far',
+    fact: 'About 70% wider than the Milky Way and seen face-on. Its lopsided arms are dotted with giant star-forming regions.' },
+  { id: 'whirlpool', name: 'Whirlpool Galaxy (M51)', type: 'Grand-design spiral galaxy', l: 104.85, b: 68.56, distKpc: 8600, diameterKpc: 23, shape: 'spiral', incl: 22, pa: 10,
+    opts: { arms: 2, pitchDeg: 17, bulge: 0.08, companion: 0.3 }, zone: 'far',
+    fact: 'The small galaxy NGC 5195 swinging past it stirs up its sharp spiral arms. In 1845 it became the first galaxy seen to be a spiral.' },
+  { id: 'sombrero', name: 'Sombrero Galaxy (M104)', type: 'Spiral galaxy', l: 298.46, b: 51.15, distKpc: 9550, diameterKpc: 15, shape: 'spiral', incl: 87, pa: 0,
+    opts: { arms: 2, pitchDeg: 5, bulge: 0.4, bulgeSize: 0.15, lane: 3 }, zone: 'far',
+    fact: 'A brilliant bulge of old stars ringed by a dark lane of dust, seen almost exactly edge-on.' },
+  { id: 'm87', name: 'M87', type: 'Giant elliptical galaxy', l: 283.78, b: 74.49, distKpc: 16400, diameterKpc: 40, shape: 'elliptical', incl: 60, pa: 20,
+    opts: { axis: 0.95, jet: 0.18 }, zone: 'far',
+    fact: 'Its central black hole, 6.5 billion times the Sun\'s mass, was the first ever photographed (2019). A jet shoots 5,000 light-years out of its core at nearly light speed.' },
 ];
 
 /** The group's center of mass sits roughly midway between its two giants. */

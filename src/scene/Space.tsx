@@ -19,10 +19,14 @@ export function Space({ unit, children }: { unit: number; children: ReactNode })
   return <group ref={ref}>{children}</group>;
 }
 
-/** Cross-fade everything under `ref` by the zoom window; hides it entirely when faded out. */
-export function useFade(window: Fade, ref: RefObject<Object3D>) {
+/**
+ * Cross-fade everything under `ref` by the zoom window; hides it entirely when faded out.
+ * With `id`, it stays fully shown while that object is focused or being flown to (closer than the window's end).
+ */
+export function useFade(window: Fade, ref: RefObject<Object3D>, id?: string) {
   useFrame(() => {
-    const o = fade(useStore.getState().logD, window);
+    const s = useStore.getState();
+    const o = id && (s.focusId === id || s.flight?.to === id) && s.logD < window[2] ? 1 : fade(s.logD, window);
     const root = ref.current;
     if (!root) return;
     root.userData.fade = o;
@@ -42,8 +46,8 @@ export function useFade(window: Fade, ref: RefObject<Object3D>) {
 }
 
 /** A group whose content cross-fades with a layer. */
-export function Fader({ window, children }: { window: Fade; children: ReactNode }) {
+export function Fader({ window, id, children }: { window: Fade; id?: string; children: ReactNode }) {
   const ref = useRef<Group>(null!);
-  useFade(window, ref);
+  useFade(window, ref, id);
   return <group ref={ref}>{children}</group>;
 }

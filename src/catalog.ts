@@ -9,7 +9,7 @@ import { BODIES, HELIO_OBJECTS, PROBES, SUN } from './data/solarSystem.ts';
 import { SATELLITES } from './data/satellites.ts';
 import { satOffset } from './lib/satellites.ts';
 import { FAMOUS_STARS, STARS } from './data/stars.ts';
-import { LOCAL_GROUP, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
+import { GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
 
 export interface CatalogObject {
   id: string;
@@ -109,13 +109,14 @@ export const CATALOG: CatalogObject[] = [
     const viewDir = new Vector3(0, Math.sin(0.12), Math.cos(0.12));
     return { ...SGR_A, viewDir, viewLogD: Math.log10(rs * 26), minLogD: Math.log10(rs * 6), pos: () => p };
   })(),
-  ...LOCAL_GROUP.map((g) => {
-    const p = galDir(g.l, g.b).multiplyScalar(g.distKpc * KPC);
-    return { ...g, size: formatSize((g.diameterKpc * KPC) / 2), viewLogD: Math.max(shown(7), Math.log10(g.diameterKpc * KPC * 2.2)), minLogD: shown(7), pos: () => p };
+  ...GALAXIES.map((g) => {
+    const dir = galDir(g.l, g.b), p = dir.clone().multiplyScalar(g.distKpc * KPC), D = g.diameterKpc * KPC;
+    // arrive on our side, so it looks the way telescopes see it; it may be explored from the inside
+    return { ...g, size: formatSize(D / 2), viewLogD: Math.log10(D * 1.4), minLogD: Math.max(19.6, Math.log10(D * 0.15)), viewDir: dir.negate(), pos: () => p };
   }),
   (() => {
     const mw = galToScene(MILKY_WAY.sunDistKpc, 0, 0);
-    const m31 = galDir(LOCAL_GROUP[0].l, LOCAL_GROUP[0].b).multiplyScalar(LOCAL_GROUP[0].distKpc);
+    const m31 = galDir(GALAXIES[0].l, GALAXIES[0].b).multiplyScalar(GALAXIES[0].distKpc);
     const p = mw.lerp(m31, LGC.towardAndromeda).multiplyScalar(KPC);
     return { ...LGC, size: formatSize((LGC.diameterMpc * MPC) / 2), viewLogD: 22.75, minLogD: shown(7), pos: () => p };
   })(),
