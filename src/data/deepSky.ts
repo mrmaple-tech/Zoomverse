@@ -153,8 +153,6 @@ export const STRUCTURES: Structure[] = [
     fact: 'A vast concentration of mass about 250 million light-years away, hidden behind the Milky Way\'s disk. It pulls the Milky Way, the Local Group and thousands of other galaxies toward it at hundreds of km/s; the streams of light show that flow.' },
   { id: 'coma-cluster', name: 'Coma Cluster', type: 'Galaxy cluster', l: 58.1, b: 87.96, distMpc: 99, sizeMpc: 6,
     fact: 'Fritz Zwicky first inferred dark matter in 1933 from how fast its galaxies move.' },
-  { id: 'shapley', name: 'Shapley Supercluster', type: 'Supercluster', l: 312, b: 31, distMpc: 200, sizeMpc: 80,
-    fact: 'The most massive concentration of galaxies in our cosmic neighborhood.' },
   { id: 'bootes-void', name: 'Boötes Void', type: 'Cosmic void', l: 80, b: 60, distMpc: 210, sizeMpc: 100,
     fact: 'A near-empty sphere ~330 million light-years across with only about 60 galaxies.' },
 ];
@@ -167,6 +165,91 @@ export const ATTRACTOR_CLUSTERS = [
   { name: 'Hydra Cluster', l: 269.6, b: 26.5, distMpc: 50, radiusMpc: 1.3, share: 0.15 },
   { name: 'Pavo II Cluster', l: 332.3, b: -23.6, distMpc: 60, radiusMpc: 1, share: 0.1 },
 ];
+
+export interface Supercluster {
+  id: string;
+  name: string;
+  type: string;
+  sizeMpc: number;
+  /** Member clusters (galactic l, b in degrees; distance and radius in Mpc; share of the galaxies). The
+   * first is the hub the filaments run to; the supercluster sits at their share-weighted center. */
+  members: { name: string; l: number; b: number; distMpc: number; radiusMpc: number; share: number }[];
+  /** Show galaxies streaming in toward the hub (Laniakea is defined by that flow). */
+  flow?: boolean;
+  fact: string;
+}
+
+export const SUPERCLUSTERS: Supercluster[] = [
+  { id: 'laniakea', name: 'Laniakea Supercluster', type: 'Supercluster (our home)', sizeMpc: 160, flow: true,
+    members: [
+      { name: 'Norma Cluster', l: 325.3, b: -7.26, distMpc: 68, radiusMpc: 2, share: 0.04 },
+      { name: 'Virgo Cluster', l: 283.8, b: 74.5, distMpc: 16.5, radiusMpc: 2.2, share: 0.22 },
+      { name: 'Fornax Cluster', l: 236.7, b: -53.6, distMpc: 19, radiusMpc: 0.7, share: 0.07 },
+      { name: 'Antlia Cluster', l: 273.0, b: 19.1, distMpc: 40.6, radiusMpc: 0.9, share: 0.08 },
+      { name: 'Ophiuchus Cluster', l: 0.6, b: 9.3, distMpc: 120, radiusMpc: 2, share: 0.12 },
+      { name: 'Abell 3581', l: 323.1, b: 32.9, distMpc: 92, radiusMpc: 1, share: 0.06 },
+      { name: 'Eridanus Cluster', l: 207.6, b: -50.5, distMpc: 23, radiusMpc: 0.8, share: 0.05 },
+    ],
+    fact: '"Immeasurable heaven" in Hawaiian: our home supercluster, about 520 million light-years across, with some 100,000 galaxies. It was defined in 2014 by mapping which way galaxies are moving: everything inside flows toward the Great Attractor. The Milky Way sits near its edge.' },
+  { id: 'virgo-supercluster', name: 'Virgo Supercluster', type: 'Supercluster (part of Laniakea)', sizeMpc: 33,
+    members: [
+      { name: 'Virgo Cluster', l: 283.8, b: 74.5, distMpc: 16.5, radiusMpc: 2.2, share: 0.45 },
+      { name: 'Ursa Major Cluster', l: 145, b: 66, distMpc: 18.6, radiusMpc: 0.8, share: 0.12 },
+      { name: 'NGC 5846 Group', l: 0.4, b: 48.8, distMpc: 26, radiusMpc: 0.6, share: 0.07 },
+      { name: 'Leo I Group', l: 234, b: 57, distMpc: 10.4, radiusMpc: 0.4, share: 0.05 },
+      { name: 'Canes Venatici I Group', l: 140, b: 80, distMpc: 4.3, radiusMpc: 0.5, share: 0.04 },
+      { name: 'M81 Group', l: 142, b: 41, distMpc: 3.6, radiusMpc: 0.3, share: 0.03 },
+    ],
+    fact: 'Our local supercluster, centered on the Virgo Cluster: the Local Group sits on its outskirts. Once thought to be the largest structure around us, it is now known to be one lobe of Laniakea.' },
+  { id: 'perseus-pisces', name: 'Perseus–Pisces Supercluster', type: 'Supercluster', sizeMpc: 80,
+    members: [
+      { name: 'Perseus Cluster', l: 150.6, b: -13.3, distMpc: 75, radiusMpc: 2, share: 0.3 },
+      { name: 'Abell 347', l: 141.2, b: -17.6, distMpc: 78, radiusMpc: 0.8, share: 0.1 },
+      { name: 'Abell 262', l: 136.6, b: -25.1, distMpc: 70, radiusMpc: 1.2, share: 0.15 },
+      { name: 'Pisces Cluster', l: 127, b: -29.6, distMpc: 68, radiusMpc: 0.8, share: 0.1 },
+    ],
+    fact: 'A long chain of galaxy clusters, one of the largest structures near us. The Perseus Cluster at its end is the brightest cluster in X-rays, and its hot gas "hums" a sound wave 57 octaves below middle C.' },
+  { id: 'coma-supercluster', name: 'Coma Supercluster', type: 'Supercluster', sizeMpc: 100,
+    members: [
+      { name: 'Coma Cluster', l: 58.1, b: 88, distMpc: 99, radiusMpc: 3, share: 0.4 },
+      { name: 'Leo Cluster', l: 234.8, b: 73, distMpc: 92, radiusMpc: 2, share: 0.25 },
+    ],
+    fact: 'Two rich clusters, Coma and Leo, at the heart of the Great Wall of galaxies, one of the first giant structures found in maps of the universe (1989).' },
+  { id: 'hercules-supercluster', name: 'Hercules Supercluster', type: 'Supercluster', sizeMpc: 50,
+    members: [
+      { name: 'Hercules Cluster', l: 31.5, b: 44.5, distMpc: 158, radiusMpc: 1.5, share: 0.3 },
+      { name: 'Abell 2147', l: 28.9, b: 44.5, distMpc: 155, radiusMpc: 1.5, share: 0.25 },
+      { name: 'Abell 2152', l: 29.9, b: 44, distMpc: 165, radiusMpc: 1, share: 0.15 },
+    ],
+    fact: 'A knot of three clusters full of colliding, gas-rich spiral galaxies: young clusters still pulling themselves together.' },
+  { id: 'shapley', name: 'Shapley Supercluster', type: 'Supercluster', sizeMpc: 80,
+    members: [
+      { name: 'Abell 3558', l: 312, b: 30.7, distMpc: 200, radiusMpc: 2.5, share: 0.3 },
+      { name: 'Abell 3562', l: 313.3, b: 30.4, distMpc: 205, radiusMpc: 1.5, share: 0.12 },
+      { name: 'Abell 3556', l: 308.3, b: 31.4, distMpc: 200, radiusMpc: 1.2, share: 0.1 },
+      { name: 'Abell 3571', l: 316.3, b: 28.6, distMpc: 160, radiusMpc: 2, share: 0.15 },
+      { name: 'Abell 3528', l: 303.9, b: 33, distMpc: 215, radiusMpc: 1.6, share: 0.12 },
+    ],
+    fact: 'The most massive concentration of galaxies in our cosmic neighborhood, about 650 million light-years away. Laniakea and the Great Attractor are themselves being pulled toward it.' },
+  { id: 'horologium-reticulum', name: 'Horologium–Reticulum Supercluster', type: 'Supercluster', sizeMpc: 180,
+    members: [
+      { name: 'Abell 3266', l: 272.1, b: -40.2, distMpc: 250, radiusMpc: 2.5, share: 0.3 },
+      { name: 'Abell 3158', l: 265, b: -48.9, distMpc: 250, radiusMpc: 1.6, share: 0.15 },
+      { name: 'Abell 3223', l: 264, b: -46, distMpc: 260, radiusMpc: 1.4, share: 0.12 },
+      { name: 'Abell 3112', l: 252.9, b: -56.1, distMpc: 320, radiusMpc: 1.6, share: 0.12 },
+    ],
+    fact: 'One of the largest superclusters known, roughly 550 million light-years across. Its true extent is still being mapped.' },
+];
+
+/** Share-weighted center of a supercluster's members, in Mpc (scene frame), and each member relative to it. */
+export function superclusterLayout(s: Supercluster, galDir: (l: number, b: number) => { multiplyScalar(n: number): Vec3 }) {
+  const pts = s.members.map((m) => galDir(m.l, m.b).multiplyScalar(m.distMpc));
+  const total = s.members.reduce((a, m) => a + m.share, 0);
+  const c = { x: 0, y: 0, z: 0 };
+  pts.forEach((p, i) => { c.x += (p.x * s.members[i].share) / total; c.y += (p.y * s.members[i].share) / total; c.z += (p.z * s.members[i].share) / total; });
+  return { center: [c.x, c.y, c.z] as [number, number, number], offsets: pts.map((p) => [p.x - c.x, p.y - c.y, p.z - c.z] as [number, number, number]) };
+}
+type Vec3 = { x: number; y: number; z: number };
 
 export const NORMA = {
   id: 'norma-cluster', name: 'Norma Cluster', type: 'Galaxy cluster (Abell 3627)', l: 325.3, b: -7.26, distMpc: 68, sizeMpc: 4,

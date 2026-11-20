@@ -44,11 +44,12 @@ function flowMaterial() {
   });
 }
 
-function Flow() {
+/** Light falling in toward `position` from a shell of `radius` (parent units). */
+export function Flow({ radius, position, count = 4000, seed = 73 }: { radius: number; position: [number, number, number]; count?: number; seed?: number }) {
   const { geometry, material } = useMemo(() => {
-    const r = rng(73), n = 4000, pos = new Float32Array(n * 3), phase = new Float32Array(n);
+    const r = rng(seed), n = count, pos = new Float32Array(n * 3), phase = new Float32Array(n);
     for (let i = 0; i < n; i++) {
-      const x = gauss(r), y = gauss(r), z = gauss(r), l = Math.hypot(x, y, z) || 1, d = R * (1.1 + r() * 0.9);
+      const x = gauss(r), y = gauss(r), z = gauss(r), l = Math.hypot(x, y, z) || 1, d = radius * (1.1 + r() * 0.9);
       pos.set([(x / l) * d, (y / l) * d, (z / l) * d], i * 3);
       phase[i] = r();
     }
@@ -56,9 +57,8 @@ function Flow() {
     g.setAttribute('position', new BufferAttribute(pos, 3));
     g.setAttribute('aPhase', new BufferAttribute(phase, 1));
     return { geometry: g, material: flowMaterial() };
-  }, []);
-  // the flow converges on the Norma Cluster, the heaviest of the group
-  return <points geometry={geometry} material={material} position={OFFSETS[0].toArray()} />;
+  }, [radius, count, seed]);
+  return <points geometry={geometry} material={material} position={position} />;
 }
 
 const GA_SHOWN: Fade = [23.0, 23.8, 26.0, 26.6];
@@ -74,7 +74,8 @@ export function AttractorLayer() {
         coarse={REGION(8000, 1.6)} fine={REGION(150_000, 0.55)} size={[0.25, 0.09]}
         glow={{ size: R * 0.8, color: '#b9a8ff' }}
       >
-        <Flow />
+        {/* the flow converges on the Norma Cluster, the heaviest of the group */}
+        <Flow radius={R} position={OFFSETS[0].toArray()} />
       </Inspectable>
       <Inspectable
         id={NORMA.id} name={NORMA.name} window={NORMA_SHOWN} label={NORMA_LABEL} position={galDir(NORMA.l, NORMA.b).multiplyScalar(NORMA.distMpc).toArray()}

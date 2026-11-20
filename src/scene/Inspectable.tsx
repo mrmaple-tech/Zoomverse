@@ -24,7 +24,7 @@ interface Props {
   /** World size (parent units) of a size-1 point, from afar and up close. */
   size: [number, number];
   /** From afar a soft halo stands in for the object's light; up close its own haze does that. */
-  glow?: { size: number; color: string };
+  glow?: { size: number; color: string; opacity?: number };
   /** Extra content placed with it (same position). */
   children?: ReactNode;
 }
@@ -41,7 +41,7 @@ export function Inspectable({ id, name, window, label, position, quaternion, coa
         <group quaternion={quaternion}>
           {near ? <PointCloud geometry={near} worldSize={size[1]} /> : far && <PointCloud geometry={far} worldSize={size[0]} />}
         </group>
-        {glow && !near && <Glow size={glow.size} color={glow.color} opacity={0.7} />}
+        {glow && !near && <Glow size={glow.size} color={glow.color} opacity={glow.opacity ?? 0.7} />}
         {children}
         <Label id={id} text={name} window={label} />
       </group>

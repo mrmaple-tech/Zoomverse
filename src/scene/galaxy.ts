@@ -295,9 +295,14 @@ export function addSupercluster(c: Cloud, { count, radius: R, seed = 1, bright =
   k.forEach(([x, y, z, cr, share], i) => addCluster(c, { count: Math.round(count * share), radius: cr, seed: seed + i * 13, bright, cx: x, cy: y, cz: z }));
   const push = (x: number, y: number, z: number, col: RGB, b: number) => c.push(x, y, z, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, 1 + r());
   const [hub] = k;
-  for (const [x, y, z] of k.slice(1)) for (let i = 0; i < count * 0.05; i++) {
-    const t = r(), s = R * 0.02 * (0.4 + 4 * t * (1 - t)); // filaments fatten between their ends
-    push(hub[0] + (x - hub[0]) * t + gauss(r) * s, hub[1] + (y - hub[1]) * t + gauss(r) * s, hub[2] + (z - hub[2]) * t + gauss(r) * s, mix(YOUNG, OLD, r()), 0.35);
+  for (const [x, y, z] of k.slice(1)) {
+    // each filament bows gently to one side, and fattens between its ends
+    const len = Math.hypot(x - hub[0], y - hub[1], z - hub[2]), w = [gauss(r), gauss(r), gauss(r)], wl = Math.hypot(...w) || 1;
+    for (let i = 0; i < count * 0.05; i++) {
+      const t = r(), s = len * 0.025 * (0.5 + 4 * t * (1 - t)), bow = Math.sin(Math.PI * t) * len * 0.15 / wl;
+      push(hub[0] + (x - hub[0]) * t + w[0] * bow + gauss(r) * s, hub[1] + (y - hub[1]) * t + w[1] * bow + gauss(r) * s,
+        hub[2] + (z - hub[2]) * t + w[2] * bow + gauss(r) * s, mix(YOUNG, OLD, r()), 0.2);
+    }
   }
   for (let i = 0; i < count * 0.12; i++) push(gauss(r) * R * 0.45, gauss(r) * R * 0.45, gauss(r) * R * 0.45, mix(YOUNG, OLD, r()), 0.25);
 }
