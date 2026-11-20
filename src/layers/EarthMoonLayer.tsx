@@ -1,7 +1,7 @@
 import { Suspense, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
-import { Matrix4, SRGBColorSpace, Vector3, type Group, type Mesh } from 'three';
+import { Matrix4, RepeatWrapping, SRGBColorSpace, Vector3, type Group, type Mesh } from 'three';
 import { GeoMoon } from 'astronomy-engine';
 import { useStore, simDate, useSimStep } from '../store.ts';
 import { get } from '../catalog.ts';
@@ -41,6 +41,9 @@ export function EarthMoonLayer() {
   // color maps are sRGB; clouds/spec/normal are data and stay linear
   [day, night].forEach((t) => (t.colorSpace = SRGBColorSpace));
   [day, clouds].forEach((t) => (t.anisotropy = Math.min(8, maxAniso))); // sharp near the limb
+  // the clouds drift east forever, so their texture must wrap around the globe: clamped (the default),
+  // once the drift passed the texture's edge it smeared the edge pixels into streaks across Earth
+  clouds.wrapS = RepeatWrapping;
   const earthMat = useMemo(() => earthMaterial({ day, night, clouds, spec, normal }), [day, night, clouds, spec, normal]);
   const halo = useMemo(() => atmosphereMaterial('#5c9dff', 1.06), []);
 
