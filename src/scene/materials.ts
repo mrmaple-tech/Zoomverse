@@ -99,13 +99,13 @@ export const earthMaterial = ({ day, night, clouds, spec, normal }: EarthMaps) =
   });
 
 /** Earth's atmosphere: a larger back-face shell that glows brightest at the limb and fades outward, lit on the day side. */
-export const atmosphereMaterial = (color: string, scale: number) =>
+export const atmosphereMaterial = (color: string, scale: number, light: { value: Vector3 } = sunWorld) =>
   new ShaderMaterial({
     transparent: true,
     depthWrite: false,
     side: BackSide,
     blending: AdditiveBlending,
-    uniforms: { uColor: { value: new Color(color) }, sunPos: sunWorld, uOpacity: { value: 1 }, limb: { value: Math.sqrt(1 - 1 / (scale * scale)) } },
+    uniforms: { uColor: { value: new Color(color) }, sunPos: light, uOpacity: { value: 1 }, limb: { value: Math.sqrt(1 - 1 / (scale * scale)) } },
     vertexShader: SPHERE_VERT,
     fragmentShader: /* glsl */ `
       uniform vec3 uColor, sunPos; uniform float uOpacity, limb; varying vec3 vP; varying vec3 vN; varying vec3 vW;
@@ -159,13 +159,13 @@ const SPHERE_VERT = /* glsl */ `
 
 
 /** Procedural planet: gas-giant bands or a mottled rocky surface, lit by the real Sun position. */
-export const planetMaterial = ({ colors, bands, turb, rim }: Look, seed: number) =>
+export const planetMaterial = ({ colors, bands, turb, rim }: Look, seed: number, light: { value: Vector3 } = sunWorld) =>
   new ShaderMaterial({
     transparent: true,
     uniforms: {
       c1: { value: new Color(colors[0]) }, c2: { value: new Color(colors[1]) }, c3: { value: new Color(colors[2]) },
       bands: { value: bands }, turb: { value: turb }, rim: { value: rim }, seed: { value: seed },
-      sunPos: sunWorld, uOpacity: { value: 1 },
+      sunPos: light, uOpacity: { value: 1 },
     },
     vertexShader: SPHERE_VERT,
     fragmentShader: /* glsl */ `

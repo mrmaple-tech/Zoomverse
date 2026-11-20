@@ -9,6 +9,7 @@ import { BODIES, HELIO_OBJECTS, PROBES, SUN } from './data/solarSystem.ts';
 import { SATELLITES } from './data/satellites.ts';
 import { satOffset } from './lib/satellites.ts';
 import { FAMOUS_STARS, STARS } from './data/stars.ts';
+import { EXOPLANETS, HOST_RADIUS, exoOffset, exoType } from './data/exoplanets.ts';
 import { GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, NEBULAE, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
 
 export interface CatalogObject {
@@ -26,6 +27,8 @@ export interface CatalogObject {
   live?: boolean;
   /** Low Earth orbit: the camera rides along on the outward side, and the card shows altitude. */
   earthOrbit?: boolean;
+  /** For a planet of another star: that star's catalog id. */
+  host?: string;
   /** Where "Fly to" puts the camera, as a unit vector from the object (scene frame). */
   viewDir?: Vector3;
   /** World position in meters (heliocentric, scene frame). Returned vectors are shared: don't mutate. */
@@ -91,13 +94,25 @@ export const CATALOG: CatalogObject[] = [
   ...STARS.map(([name, x, y, z, , absmag, bv, spect], i) => {
     const t = starTemp(bv);
     const p = eqjToScene(x, y, z).multiplyScalar(PC);
-    const rSun = starRadiusSun(absmag, t), R = (Number.isFinite(rSun) ? rSun : 1) * SUN.radiusKm * 1e3;
-    // fly right up to its surface, like the Sun's
+    const est = starRadiusSun(absmag, t), rSun = HOST_RADIUS[name] ?? (Number.isFinite(est) ? est : 1), R = rSun * SUN.radiusKm * 1e3;
+    const planets = EXOPLANETS.filter((e) => e.host === name);
+    const fact = FAMOUS_STARS[name] ?? SPECTRAL[spect[0]] ?? 'One of the Sun\'s stellar neighbors.';
+    // fly right up to its surface, like the Sun's; a star with planets frames its whole system first
     return {
       id: `star-${i}`, name, type: `Star · ${spect.replace(/\.+$/, '') || 'unknown class'}`,
       size: `≈ ${rSun.toPrecision(2)} × the Sun's radius`, radiusM: R,
-      fact: FAMOUS_STARS[name] ?? SPECTRAL[spect[0]] ?? 'One of the Sun\'s stellar neighbors.',
-      viewLogD: Math.log10(R * 6), minLogD: Math.log10(R * 1.3), pos: () => p,
+      fact: planets.length ? `${fact} It has ${planets.length === 1 ? 'one known planet' : `${planets.length} known planets`}: fly in to explore.` : fact,
+      viewLogD: planets.length ? Math.log10(Math.max(...planets.map((e) => e.a)) * AU * 2.6) : Math.log10(R * 6),
+      minLogD: Math.log10(R * 1.3), pos: () => p,
+    };
+  }),
+  ...EXOPLANETS.map((e) => {
+    const host = STARS.findIndex((s) => s[0] === e.host), [, x, y, z] = STARS[host];
+    const star = eqjToScene(x, y, z).multiplyScalar(PC), v = new Vector3();
+    return {
+      id: e.id, name: e.name, type: `Exoplanet · ${exoType(e)}`, fact: `${e.fact} Discovered ${e.year}.`, host: `star-${host}`,
+      ...solid(e.radiusEarth * 6371, 4.5),
+      pos: (t: Date) => exoOffset(e, t.getTime(), v).multiplyScalar(AU).add(star),
     };
   }),
   (() => {

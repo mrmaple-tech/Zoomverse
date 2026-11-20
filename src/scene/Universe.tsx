@@ -17,6 +17,7 @@ import { OuterSolarLayer } from '../layers/OuterSolarLayer.tsx';
 import { HeliosphereLayer } from '../layers/HeliosphereLayer.tsx';
 import { NearbyStarsLayer } from '../layers/NearbyStarsLayer.tsx';
 import { NebulaLayer } from '../layers/NebulaLayer.tsx';
+import { ExoplanetLayer } from '../layers/ExoplanetLayer.tsx';
 import { MilkyWayLayer } from '../layers/MilkyWayLayer.tsx';
 import { LocalGroupLayer } from '../layers/LocalGroupLayer.tsx';
 import { CosmicWebLayer } from '../layers/CosmicWebLayer.tsx';
@@ -129,6 +130,7 @@ export function Universe() {
       {far && (
         <>
           <Space unit={PC}><NearbyStarsLayer /><NebulaLayer /></Space>
+          <Space unit={AU}><ExoplanetLayer /></Space>
           <Space unit={KPC}><MilkyWayLayer /></Space>
           <Space unit={KPC}><LocalGroupLayer /></Space>
           <Space unit={MPC}><CosmicWebLayer /></Space>
