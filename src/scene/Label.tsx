@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useStore } from '../store.ts';
 import { fade } from '../lib/coords.ts';
+import { byId } from '../catalog.ts';
 import type { Fade } from '../data/layers.ts';
 
 interface Props {
@@ -26,7 +27,11 @@ export function Label({ id, text, window, position, variant, shown }: Props) {
     if (!el.current) return; // Html mounts its DOM a frame later
     const s = useStore.getState();
     // the focused object stays labeled up close, but not once zoomed out past its own window
-    const o = shown && !shown() ? 0 : (s.focusId === id || s.flight?.to === id) && s.logD < window[2] ? 1 : fade(s.logD, window);
+    let o = shown && !shown() ? 0 : (s.focusId === id || s.flight?.to === id) && s.logD < window[2] ? 1 : fade(s.logD, window);
+    // labels go by zoom, not by place: hide ones whose object is way off in the distance from where
+    // you're looking (the planets' labels while you're at Sirius, say). "You are here" always shows.
+    const obj = byId.get(id);
+    if (o > 0 && obj && variant !== 'here' && obj.pos(new Date(s.simTime)).distanceTo(s.focus) > 100 * 10 ** s.logD) o = 0;
     el.current.style.opacity = String(o);
     el.current.style.visibility = o < 0.25 ? 'hidden' : 'visible';
   });

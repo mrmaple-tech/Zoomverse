@@ -16,7 +16,10 @@ const NAMES = [...new Set(CATALOG.map((o) => o.name))].sort();
 function go(name: string) {
   const q = name.trim().toLowerCase();
   if (!q) return false;
-  const hit = CATALOG.find((o) => o.name.toLowerCase() === q) ?? CATALOG.find((o) => o.name.toLowerCase().includes(q));
+  // exact name, then names starting with it, then whole-word matches ("crab" → Crab Nebula, not Acrab), then anywhere
+  const lc = (o: (typeof CATALOG)[number]) => o.name.toLowerCase();
+  const hit = CATALOG.find((o) => lc(o) === q) ?? CATALOG.find((o) => lc(o).startsWith(q))
+    ?? CATALOG.find((o) => lc(o).includes(` ${q}`) || lc(o).includes(`(${q}`)) ?? CATALOG.find((o) => lc(o).includes(q));
   if (!hit) return false;
   const s = useStore.getState();
   s.select(hit.id);

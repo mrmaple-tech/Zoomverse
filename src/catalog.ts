@@ -9,7 +9,7 @@ import { BODIES, HELIO_OBJECTS, PROBES, SUN } from './data/solarSystem.ts';
 import { SATELLITES } from './data/satellites.ts';
 import { satOffset } from './lib/satellites.ts';
 import { FAMOUS_STARS, STARS } from './data/stars.ts';
-import { GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
+import { GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, NEBULAE, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
 
 export interface CatalogObject {
   id: string;
@@ -91,11 +91,13 @@ export const CATALOG: CatalogObject[] = [
   ...STARS.map(([name, x, y, z, , absmag, bv, spect], i) => {
     const t = starTemp(bv);
     const p = eqjToScene(x, y, z).multiplyScalar(PC);
+    const rSun = starRadiusSun(absmag, t), R = (Number.isFinite(rSun) ? rSun : 1) * SUN.radiusKm * 1e3;
+    // fly right up to its surface, like the Sun's
     return {
       id: `star-${i}`, name, type: `Star · ${spect.replace(/\.+$/, '') || 'unknown class'}`,
-      size: `≈ ${starRadiusSun(absmag, t).toPrecision(2)} × the Sun's radius`,
+      size: `≈ ${rSun.toPrecision(2)} × the Sun's radius`, radiusM: R,
       fact: FAMOUS_STARS[name] ?? SPECTRAL[spect[0]] ?? 'One of the Sun\'s stellar neighbors.',
-      viewLogD: 16.9, minLogD: shown(5), pos: () => p,
+      viewLogD: Math.log10(R * 6), minLogD: Math.log10(R * 1.3), pos: () => p,
     };
   }),
   (() => {
@@ -113,6 +115,10 @@ export const CATALOG: CatalogObject[] = [
     const dir = galDir(g.l, g.b), p = dir.clone().multiplyScalar(g.distKpc * KPC), D = g.diameterKpc * KPC;
     // arrive on our side, so it looks the way telescopes see it; it may be explored from the inside
     return { ...g, size: formatSize(D / 2), viewLogD: Math.log10(D * 1.4), minLogD: Math.max(19.6, Math.log10(D * 0.15)), viewDir: dir.negate(), pos: () => p };
+  }),
+  ...NEBULAE.map((n) => {
+    const dir = radecDir(n.ra, n.dec), p = dir.clone().multiplyScalar(n.distPc * PC), D = n.sizePc * PC;
+    return { ...n, size: formatSize(D / 2), viewLogD: Math.log10(D * 1.5), minLogD: Math.log10(D * 0.1), viewDir: dir.negate(), pos: () => p };
   }),
   (() => {
     const mw = galToScene(MILKY_WAY.sunDistKpc, 0, 0);

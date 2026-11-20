@@ -23,17 +23,24 @@ function haze(c: Cloud, r: () => number, n: number, at: () => [number, number, n
  * of young blue stars with pink star-forming knots, dust lanes on the arms' inner edges and in the midplane
  * (visible edge-on), and an older, yellower disk between the arms.
  */
-export function addSpiral(c: Cloud, { count, radius: R, arms = 4, pitchDeg = 13, cx = 0, seed = 1, bright = 1, bulge = 0.1, bulgeSize = 0.09, bar = 0, lane = 0.5, companion = 0 }: {
-  count: number; radius: number; arms?: number; pitchDeg?: number; cx?: number; seed?: number; bright?: number;
+export function addSpiral(c: Cloud, { count, radius: R, arms = 4, pitchDeg = 13, cx = 0, cy = 0, seed = 1, bright = 1, bulge = 0.1, bulgeSize = 0.09, bar = 0, lane = 0.5, companion = 0, eye = 0 }: {
+  count: number; radius: number; arms?: number; pitchDeg?: number; cx?: number; cy?: number; seed?: number; bright?: number;
   bulge?: number; bulgeSize?: number; bar?: number; lane?: number; companion?: number;
+  /** A dark band of dust curving across one side of the nucleus (the Black Eye Galaxy). */
+  eye?: number;
 }) {
   const r = rng(seed);
   const k = 1 / Math.tan((pitchDeg * Math.PI) / 180);
   const r0 = Math.max(R * 0.08, bar * R); // the arms start at the bar's ends
   const h = R * 0.012, sep = TAU / arms;
   const armAt = (d: number, arm: number) => arm * sep + Math.log(d / r0) * k;
-  const push = (x: number, y: number, z: number, col: RGB, b: number, size: number) =>
-    c.push(x + cx, y, z, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, size);
+  const push = (x: number, y: number, z: number, col: RGB, b: number, size: number) => {
+    if (eye && x * 0.6 + y > R * 0.02) {
+      const d = Math.hypot(x, y);
+      if (d > R * 0.06 && d < R * 0.24) b *= 0.12;
+    }
+    c.push(x + cx, y + cy, z, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, size);
+  };
   const knots = Array.from({ length: Math.round(arms * 40) }, () => {
     const d = R * (0.2 + 0.7 * r()), th = armAt(d, Math.floor(r() * arms)) + gauss(r) * 0.06;
     return [d * Math.cos(th), d * Math.sin(th), gauss(r) * h * 0.4];
@@ -73,12 +80,12 @@ export function addSpiral(c: Cloud, { count, radius: R, arms = 4, pitchDeg = 13,
     const d = core ? Math.abs(gauss(r)) * R * Math.max(0.12, bulgeSize * 1.2) : R * (0.1 + 0.75 * r() ** 1.5);
     const th = core ? r() * TAU : armAt(Math.max(d, r0), Math.floor(r() * arms)) + gauss(r) * 0.15;
     const z = gauss(r) * (core ? d * 0.5 : R * 0.008);
-    return [d * Math.cos(th) + cx, d * Math.sin(th), z, core ? CORE : YOUNG, (core ? 0.07 : 0.035) * bright * (lane > 1 ? midplane(z) : 1)];
+    return [d * Math.cos(th) + cx, d * Math.sin(th) + cy, z, core ? CORE : YOUNG, (core ? 0.07 : 0.035) * bright * (lane > 1 ? midplane(z) : 1)];
   });
   // a small companion at the tip of the first arm (the Whirlpool's NGC 5195)
   if (companion) {
     const th = armAt(R * 0.95, 0) + 0.25;
-    addElliptical(c, { count: Math.round(count * companion * 0.35), radius: R * companion, axis: 0.7, cx: cx + R * 1.05 * Math.cos(th), cy: R * 1.05 * Math.sin(th), seed: seed + 99, bright: bright * 1.3 });
+    addElliptical(c, { count: Math.round(count * companion * 0.35), radius: R * companion, axis: 0.7, cx: cx + R * 1.05 * Math.cos(th), cy: cy + R * 1.05 * Math.sin(th), seed: seed + 99, bright: bright * 1.3 });
   }
 }
 
@@ -178,5 +185,55 @@ export function web(c: Cloud, seed: number, nodes: number, rMin: number, rMax: n
       const k = 0.5 + r() * 0.5;
       c.push(a.x + gauss(r) * scatter * 1.3, a.y + gauss(r) * scatter * 1.3, a.z + gauss(r) * scatter * 1.3, k, 0.8 * k, 0.62 * k, 1.4 + r() * 1.2);
     }
+  }
+}
+
+/**
+ * Ring galaxy: a yellow core inside a ring of young blue stars and pink star-forming knots, left by a
+ * smaller galaxy punching through (Cartwheel), or a near-perfect ring around an empty gap (Hoag's Object).
+ */
+export function addRing(c: Cloud, { count, radius: R, seed = 1, bright = 1, ringR = 0.8, ringW = 0.06, core = 0.2, coreR = 0.15, inner = 0, spokes = 0 }: {
+  count: number; radius: number; seed?: number; bright?: number; ringR?: number; ringW?: number; core?: number; coreR?: number; inner?: number; spokes?: number;
+}) {
+  const r = rng(seed);
+  const push = (x: number, y: number, z: number, col: RGB, b: number, size: number) =>
+    c.push(x, y, z, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, size);
+  addElliptical(c, { count: Math.round(count * core), radius: R * coreR, axis: 0.8, seed: seed + 7, bright: bright * 1.2 });
+  const phase = r() * TAU;
+  for (let i = 0; i < count * (1 - core); i++) {
+    const kind = r(), th = r() * TAU, lump = 0.55 + 0.45 * Math.sin(th * 3 + phase) * Math.sin(th * 7 + phase * 2);
+    if (spokes && kind < 0.08) {
+      // faint spokes between the core and the ring
+      const a = (Math.floor(r() * spokes) / spokes) * TAU + gauss(r) * 0.03, d = R * (coreR + (ringR - coreR) * r());
+      push(d * Math.cos(a), d * Math.sin(a), gauss(r) * R * 0.005, OLD, 0.25, 1.1);
+    } else if (inner && kind < 0.2) {
+      const d = R * inner + gauss(r) * R * 0.025;
+      push(d * Math.cos(th), d * Math.sin(th), gauss(r) * R * 0.008, mix(CORE, OLD, r()), 0.35 + r() * 0.3, 1.2);
+    } else {
+      const d = R * ringR + gauss(r) * R * ringW * (0.7 + 0.6 * lump), pink = r() < 0.12;
+      push(d * Math.cos(th), d * Math.sin(th), gauss(r) * R * 0.01, pink ? HII : YOUNG, (0.3 + r() * 0.35) * (0.5 + lump) * (pink ? 1.6 : 1), pink ? 1.8 : 1.2);
+    }
+  }
+  haze(c, r, count * 0.04, () => {
+    const th = r() * TAU, d = R * ringR + gauss(r) * R * ringW;
+    return [d * Math.cos(th), d * Math.sin(th), 0, YOUNG, 0.05 * bright];
+  });
+}
+
+/** Two spirals colliding (the Antennae): overlapping disks, a starburst where they meet, and two long curved tidal tails. */
+export function addMerger(c: Cloud, { count, radius: R, seed = 1, bright = 1 }: { count: number; radius: number; seed?: number; bright?: number }) {
+  const r = rng(seed);
+  addSpiral(c, { count: Math.round(count * 0.32), radius: R * 0.3, cx: -R * 0.12, cy: R * 0.05, seed, bright, arms: 2, pitchDeg: 22, bulge: 0.14 });
+  addSpiral(c, { count: Math.round(count * 0.28), radius: R * 0.26, cx: R * 0.13, cy: -R * 0.06, seed: seed + 1, bright, arms: 2, pitchDeg: 26, bulge: 0.14 });
+  const push = (x: number, y: number, z: number, col: RGB, b: number, size: number) =>
+    c.push(x, y, z, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, size);
+  for (let i = 0; i < count * 0.06; i++) {
+    const pink = r() < 0.6; // the collision squeezes gas into a burst of new stars
+    push(gauss(r) * R * 0.09, gauss(r) * R * 0.06, gauss(r) * R * 0.02, pink ? HII : YOUNG, 0.5 + r() * 0.5, pink ? 1.8 : 1.4);
+  }
+  for (let i = 0; i < count * 0.3; i++) {
+    const side = r() < 0.5 ? 1 : -1, t = r() ** 0.8;
+    const a = (side > 0 ? 0 : Math.PI) + side * (0.4 + t * 2.3), d = R * (0.2 + 0.8 * t), w = R * (0.012 + 0.035 * t);
+    push(d * Math.cos(a) + gauss(r) * w, d * Math.sin(a) * 0.75 + gauss(r) * w, gauss(r) * w * 0.5, mix(YOUNG, OLD, r()), (0.22 + r() * 0.3) * (1 - 0.65 * t), 1 + r());
   }
 }

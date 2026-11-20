@@ -202,22 +202,24 @@ export const planetMaterial = ({ colors, bands, turb, rim }: Look, seed: number)
  * The Sun (or any star, given its granulation colors): churning granulation, limb darkening,
  * pushed past 1.0 so bloom catches it.
  */
-export const sunMaterial = (dark: [number, number, number] = [1, 0.42, 0.08], light: [number, number, number] = [1, 0.92, 0.65]) =>
+/** `cells` scales the convection pattern: below 1 for giants, whose granules are huge. */
+export const sunMaterial = (dark: [number, number, number] = [1, 0.42, 0.08], light: [number, number, number] = [1, 0.92, 0.65], cells = 1) =>
   new ShaderMaterial({
     transparent: true,
-    uniforms: { uTime: clock, uOpacity: { value: 1 }, cDark: { value: new Vector3(...dark) }, cLight: { value: new Vector3(...light) } },
+    uniforms: { uTime: clock, uOpacity: { value: 1 }, cDark: { value: new Vector3(...dark) }, cLight: { value: new Vector3(...light) }, uCells: { value: cells } },
     vertexShader: SPHERE_VERT,
     fragmentShader: /* glsl */ `
-      uniform float uTime, uOpacity; uniform vec3 cDark, cLight; varying vec3 vP; varying vec3 vN; varying vec3 vW;
+      uniform float uTime, uOpacity, uCells; uniform vec3 cDark, cLight; varying vec3 vP; varying vec3 vN; varying vec3 vW;
       ${NOISE}
       void main() {
-        float g = fbm(vP * 7.0 + vec3(0.0, uTime * 0.04, uTime * 0.03));
-        float s = fbm(vP * 2.5 - uTime * 0.01);
-        float fine = fbm(vP * 28.0 + vec3(uTime * 0.08, 0.0, -uTime * 0.06)); // small granules
+        vec3 P = vP * uCells;
+        float g = fbm(P * 7.0 + vec3(0.0, uTime * 0.04, uTime * 0.03));
+        float s = fbm(P * 2.5 - uTime * 0.01);
+        float fine = fbm(P * 28.0 + vec3(uTime * 0.08, 0.0, -uTime * 0.06)); // small granules
         vec3 col = mix(cDark, cLight, smoothstep(0.25, 0.75, g * 0.7 + fine * 0.3));
         col *= 0.75 + 0.5 * s;
         // sunspots: dark umbra with a lighter penumbra, kept to the mid-latitudes like the real ones
-        float spot = fbm(vP * 4.0 + 13.0 + uTime * 0.002) * smoothstep(0.55, 0.15, abs(vP.y));
+        float spot = fbm(P * 4.0 + 13.0 + uTime * 0.002) * smoothstep(0.55, 0.15, abs(vP.y));
         col *= 1.0 - 0.55 * smoothstep(0.66, 0.7, spot) - 0.3 * smoothstep(0.6, 0.66, spot);
         // bright faculae near the limb
         col += cLight * 0.25 * smoothstep(0.62, 0.8, fine) * (1.0 - clamp(dot(normalize(vN), normalize(cameraPosition - vW)), 0.0, 1.0));
