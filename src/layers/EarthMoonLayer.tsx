@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { Suspense, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import { Matrix4, SRGBColorSpace, Vector3, type Group, type Mesh } from 'three';
@@ -16,7 +16,8 @@ import { Orbit } from '../scene/Orbit.tsx';
 import { K, useFade } from '../scene/Space.tsx';
 
 const LAYER = LAYERS[0];
-const TEXTURES = ['earth_day', 'earth_night', 'earth_clouds', 'earth_spec', 'earth_normal', 'moon'];
+const tex = (f: string) => `${import.meta.env.BASE_URL}textures/${f}.webp`;
+const TEXTURES = ['earth_day', 'earth_night', 'earth_clouds', 'earth_spec', 'earth_normal'].map(tex);
 const [EARTH, MOON] = BODIES;
 const UP = new Vector3(0, 1, 0);
 const WEEK = 6.048e8;
@@ -36,11 +37,10 @@ function MoonOrbit() {
 export function EarthMoonLayer() {
   const sats = useStore((s) => s.show.satellites);
   const maxAniso = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
-  const textures = useTexture(TEXTURES.map((f) => `${import.meta.env.BASE_URL}textures/${f}.webp`));
-  const [day, night, clouds, spec, normal, moonMap] = textures;
+  const [day, night, clouds, spec, normal] = useTexture(TEXTURES);
   // color maps are sRGB; clouds/spec/normal are data and stay linear
-  [day, night, moonMap].forEach((t) => (t.colorSpace = SRGBColorSpace));
-  [day, clouds, moonMap].forEach((t) => (t.anisotropy = Math.min(8, maxAniso))); // sharp near the limb
+  [day, night].forEach((t) => (t.colorSpace = SRGBColorSpace));
+  [day, clouds].forEach((t) => (t.anisotropy = Math.min(8, maxAniso))); // sharp near the limb
   const earthMat = useMemo(() => earthMaterial({ day, night, clouds, spec, normal }), [day, night, clouds, spec, normal]);
   const halo = useMemo(() => atmosphereMaterial('#5c9dff', 1.06), []);
 
@@ -48,13 +48,6 @@ export function EarthMoonLayer() {
     const t = simDate();
     m.setRotationFromMatrix(earthBasis(t));
     earthMat.uniforms.sunDir.value = get('earth').pos(t).clone().negate().normalize();
-  };
-  // Tidally locked: the near side (texture longitude 0, local +X) always faces Earth.
-  const faceEarth = (m: Mesh) => {
-    const t = simDate();
-    const x = get('earth').pos(t).clone().sub(get('moon').pos(t)).normalize();
-    const y = UP.clone().addScaledVector(x, -x.dot(UP)).normalize();
-    m.setRotationFromMatrix(new Matrix4().makeBasis(x, y, new Vector3().crossVectors(x, y)));
   };
 
   return (
@@ -64,13 +57,32 @@ export function EarthMoonLayer() {
         {/* thin atmosphere glow just past the limb */}
         <mesh scale={1.06} material={halo}><sphereGeometry args={[1, 64, 32]} /></mesh>
       </Body>
-      <Body id="moon" window={MOON.fade} onFrame={faceEarth}>
-        <meshStandardMaterial map={moonMap} bumpMap={moonMap} bumpScale={4} roughness={1} />
-      </Body>
+      {/* own boundary: Earth shouldn't wait for the Moon's texture */}
+      <Suspense fallback={null}><Moon /></Suspense>
       <MoonOrbit />
       {sats && <Satellites />}
       <HomeMarker />
     </>
+  );
+}
+
+// Tidally locked: the near side (texture longitude 0, local +X) always faces Earth.
+const faceEarth = (m: Mesh) => {
+  const t = simDate();
+  const x = get('earth').pos(t).clone().sub(get('moon').pos(t)).normalize();
+  const y = UP.clone().addScaledVector(x, -x.dot(UP)).normalize();
+  m.setRotationFromMatrix(new Matrix4().makeBasis(x, y, new Vector3().crossVectors(x, y)));
+};
+
+function Moon() {
+  const maxAniso = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
+  const map = useTexture(tex('moon'));
+  map.colorSpace = SRGBColorSpace;
+  map.anisotropy = Math.min(8, maxAniso);
+  return (
+    <Body id="moon" window={MOON.fade} onFrame={faceEarth}>
+      <meshStandardMaterial map={map} bumpMap={map} bumpScale={4} roughness={1} />
+    </Body>
   );
 }
 

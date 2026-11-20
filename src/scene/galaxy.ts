@@ -31,6 +31,16 @@ export function addSpiral(c: Cloud, { count, radius, arms = 4, pitchDeg = 13, cx
     const b = (0.22 + r() * 0.38) * bright;
     c.push(x + cx, y, z, col[0] * b, col[1] * b, col[2] * b, size);
   }
+  // soft glow: a few big, faint points tracing the core and arms, so the disk reads as light, not grain
+  for (let i = 0; i < count * 0.05; i++) {
+    const core = r() < 0.3;
+    const d = core ? Math.abs(gauss(r)) * radius * 0.12 : radius * (0.1 + 0.75 * r() ** 1.5);
+    const arm = Math.floor(r() * arms);
+    const th = core ? r() * Math.PI * 2 : (arm * 2 * Math.PI) / arms + Math.log(d / (radius * 0.08)) * k + gauss(r) * 0.15;
+    const b = (core ? 0.07 : 0.035) * bright;
+    const col = core ? [1, 0.78, 0.5] : [0.55, 0.65, 1];
+    c.push(d * Math.cos(th) + cx, d * Math.sin(th), gauss(r) * radius * 0.008, col[0] * b, col[1] * b, col[2] * b, 6 + r() * 1.5);
+  }
 }
 
 export function addIrregular(c: Cloud, { count, radius, seed = 1, bright = 1 }: { count: number; radius: number; seed?: number; bright?: number }) {

@@ -28,7 +28,7 @@ export const pointsMaterial = (opacity = 1) =>
         if (uWorld > 0.0) {
           px = size * uWorld * length(modelViewMatrix[0].xyz) * projectionMatrix[1][1] * uHalfH / -mv.z;
           vFade = min(px * px, 1.0);
-          px = clamp(px, 1.0, 4.0);
+          px = clamp(px, 1.0, max(4.0, size * 1.4)); // big faint points (galaxy haze) may grow past star size
         }
         gl_PointSize = px * uPx;
       }`,
