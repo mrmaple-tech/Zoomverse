@@ -148,3 +148,11 @@ export const selectOnClick = (id: string) => (e: { delta: number; stopPropagatio
   e.stopPropagation();
   useStore.getState().select(id);
 };
+
+/** onDoubleClick handler that flies the camera to `id`. */
+export const flyOnDoubleClick = (id: string) => (e: { stopPropagation: () => void }) => {
+  e.stopPropagation();
+  const s = useStore.getState();
+  s.select(id);
+  s.flyTo(id);
+};

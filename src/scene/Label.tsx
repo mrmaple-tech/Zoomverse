@@ -37,6 +37,7 @@ export function Label({ id, text, window, position, variant, shown }: Props) {
         ref={el}
         className={`label ${variant ?? ''} ${selected ? 'selected' : ''}`}
         onClick={() => useStore.getState().select(id)}
+        onDoubleClick={() => { const s = useStore.getState(); s.select(id); s.flyTo(id); }}
       >
         {(variant === 'here' || variant === 'marker') && <span className="pin" aria-hidden />}
         {text}

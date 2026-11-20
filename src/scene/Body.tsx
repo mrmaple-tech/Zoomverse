@@ -3,7 +3,7 @@
 import { useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, Mesh } from 'three';
-import { useStore, simDate, selectOnClick } from '../store.ts';
+import { useStore, simDate, selectOnClick, flyOnDoubleClick } from '../store.ts';
 import { get } from '../catalog.ts';
 import { AU } from '../lib/coords.ts';
 import type { Fade } from '../data/layers.ts';
@@ -37,8 +37,8 @@ export function Body({ id, window, minFrac = 0.006, children, label = true, onFr
   });
   return (
     <group ref={group}>
-      <mesh ref={mesh} onClick={selectOnClick(id)}>
-        <sphereGeometry args={[1, 64, 32]} />
+      <mesh ref={mesh} onClick={selectOnClick(id)} onDoubleClick={flyOnDoubleClick(id)}>
+        <sphereGeometry args={[1, 128, 64]} />
         {children}
       </mesh>
       {label && <Label id={id} text={obj.name} window={window} />}

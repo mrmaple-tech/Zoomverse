@@ -81,8 +81,9 @@ export const earthMaterial = ({ day, night, clouds, spec, normal }: EarthMaps) =
         float l = dot(n, sunDir);              // relief shading
         float c = texture2D(clouds, vUv + vec2(uTime * 0.00025, 0.0)).r;
         float water = texture2D(spec, vUv).r;
+        float shadow = texture2D(clouds, vUv + vec2(uTime * 0.00025, 0.0) - sunDir.xz * 0.0015).r;
 
-        vec3 col = texture2D(day, vUv).rgb * max(l, 0.0) * 1.3;
+        vec3 col = texture2D(day, vUv).rgb * max(l, 0.0) * 1.3 * (1.0 - shadow * 0.35);
         vec3 H = normalize(sunDir + V);
         float nh = max(dot(n0, H), 0.0);
         col += (vec3(1.0, 0.93, 0.8) * pow(nh, 600.0) * 0.9 + vec3(0.25, 0.4, 0.6) * pow(nh, 30.0) * 0.18) * water * (1.0 - c) * step(0.0, l0);
@@ -146,7 +147,7 @@ const NOISE = /* glsl */ `
     return mix(mix(mix(hash(i), hash(i + vec3(1, 0, 0)), f.x), mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), f.x), f.y),
                mix(mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), f.x), mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
   }
-  float fbm(vec3 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++) { s += a * noise(p); p *= 2.03; a *= 0.5; } return s; }`;
+  float fbm(vec3 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 6; i++) { s += a * noise(p); p *= 2.03; a *= 0.5; } return s; }`;
 
 const SPHERE_VERT = /* glsl */ `
   varying vec3 vP; varying vec3 vN; varying vec3 vW;
@@ -173,16 +174,26 @@ export const planetMaterial = ({ colors, bands, turb, rim }: Look, seed: number)
       ${NOISE}
       void main() {
         vec3 p = vP + seed;
-        float n = fbm(p * 3.0);
-        float t = bands > 0.0
-          ? mix(0.5 + 0.5 * sin(vP.y * bands + n * turb), fbm(p * vec3(1.5, 14.0, 1.5)), 0.3)
-          : smoothstep(0.3, 0.75, n + 0.25 * fbm(p * 9.0));
+        // domain warp: swirls, storms and eroded terrain instead of flat blotches
+        vec3 w = vec3(fbm(p * 2.0), fbm(p * 2.0 + 5.2), fbm(p * 2.0 + 9.7)) - 0.5;
+        float n = fbm(p * 3.0 + w * 1.5);
+        float t;
+        if (bands > 0.0) {
+          float lat = vP.y + w.y * 0.08 * turb + fbm(p * vec3(2.0, 20.0, 2.0)) * 0.03;
+          t = mix(0.5 + 0.5 * sin(lat * bands + n * turb), fbm(p * vec3(1.5, 18.0, 1.5) + w), 0.35);
+        } else {
+          t = smoothstep(0.3, 0.75, n + 0.25 * fbm(p * 9.0 + w * 3.0));
+          // craters on rocky worlds: ring-shaped dips in a cellular-ish noise
+          float cr = fbm(p * 14.0);
+          t -= 0.25 * smoothstep(0.62, 0.7, cr) * (1.0 - smoothstep(0.7, 0.78, cr));
+        }
         vec3 col = mix(c1, c2, t);
-        col = mix(col, c3, smoothstep(0.6, 0.78, fbm(p * 5.0 + 7.0)) * 0.7);
+        col = mix(col, c3, smoothstep(0.6, 0.78, fbm(p * 5.0 + 7.0 + w * 2.0)) * 0.7);
+        col *= 0.92 + 0.16 * fbm(p * 32.0); // fine grain up close
         vec3 N = normalize(vN), L = normalize(sunPos - vW), V = normalize(cameraPosition - vW);
         float l = dot(N, L);
         float fr = pow(clamp(1.0 - dot(N, V), 0.0, 1.0), 3.0);
-        col = col * (max(l, 0.0) * 1.15 + 0.015) + mix(c2, vec3(0.6, 0.8, 1.0), 0.4) * rim * fr * smoothstep(-0.25, 0.5, l);
+        col = col * (smoothstep(-0.05, 0.25, l) * max(l, 0.0) * 1.2 + 0.012) + mix(c2, vec3(0.6, 0.8, 1.0), 0.4) * rim * fr * smoothstep(-0.25, 0.5, l);
         gl_FragColor = vec4(col, uOpacity);
       }`,
   });

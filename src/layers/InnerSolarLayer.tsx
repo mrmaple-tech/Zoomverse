@@ -6,15 +6,17 @@ import { Body } from '../scene/Body.tsx';
 import { Orbit, planetSampler } from '../scene/Orbit.tsx';
 import { Fader } from '../scene/Space.tsx';
 import { Glow } from '../scene/Glow.tsx';
-import { planetMaterial, sunMaterial } from '../scene/materials.ts';
+import { atmosphereMaterial, planetMaterial, sunMaterial } from '../scene/materials.ts';
 
 const LAYER = LAYERS[1];
 
 export function Planet({ b, children }: { b: SolarBody; children?: ReactNode }) {
   const material = useMemo(() => planetMaterial(b.look!, b.radiusKm % 17), [b]);
+  const halo = useMemo(() => (b.look!.rim > 0.2 ? atmosphereMaterial(b.look!.colors[1], 1.04) : null), [b]);
   return (
     <Body id={b.id} window={b.fade}>
       <primitive object={material} attach="material" />
+      {halo && <mesh scale={1.04} material={halo}><sphereGeometry args={[1, 64, 32]} /></mesh>}
       {children}
     </Body>
   );
