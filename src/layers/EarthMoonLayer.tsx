@@ -40,7 +40,7 @@ export function EarthMoonLayer() {
   const [day, night, clouds, spec, normal, moonMap] = textures;
   // color maps are sRGB; clouds/spec/normal are data and stay linear
   [day, night, moonMap].forEach((t) => (t.colorSpace = SRGBColorSpace));
-  [day, clouds].forEach((t) => (t.anisotropy = Math.min(8, maxAniso))); // sharp near the limb
+  [day, clouds, moonMap].forEach((t) => (t.anisotropy = Math.min(8, maxAniso))); // sharp near the limb
   const earthMat = useMemo(() => earthMaterial({ day, night, clouds, spec, normal }), [day, night, clouds, spec, normal]);
   const halo = useMemo(() => atmosphereMaterial('#5c9dff', 1.06), []);
 
@@ -65,7 +65,7 @@ export function EarthMoonLayer() {
         <mesh scale={1.06} material={halo}><sphereGeometry args={[1, 64, 32]} /></mesh>
       </Body>
       <Body id="moon" window={MOON.fade} onFrame={faceEarth}>
-        <meshStandardMaterial map={moonMap} roughness={1} />
+        <meshStandardMaterial map={moonMap} bumpMap={moonMap} bumpScale={4} roughness={1} />
       </Body>
       <MoonOrbit />
       {sats && <Satellites />}

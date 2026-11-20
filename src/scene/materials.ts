@@ -213,8 +213,14 @@ export const sunMaterial = (dark: [number, number, number] = [1, 0.42, 0.08], li
       void main() {
         float g = fbm(vP * 7.0 + vec3(0.0, uTime * 0.04, uTime * 0.03));
         float s = fbm(vP * 2.5 - uTime * 0.01);
-        vec3 col = mix(cDark, cLight, smoothstep(0.25, 0.75, g));
+        float fine = fbm(vP * 28.0 + vec3(uTime * 0.08, 0.0, -uTime * 0.06)); // small granules
+        vec3 col = mix(cDark, cLight, smoothstep(0.25, 0.75, g * 0.7 + fine * 0.3));
         col *= 0.75 + 0.5 * s;
+        // sunspots: dark umbra with a lighter penumbra, kept to the mid-latitudes like the real ones
+        float spot = fbm(vP * 4.0 + 13.0 + uTime * 0.002) * smoothstep(0.55, 0.15, abs(vP.y));
+        col *= 1.0 - 0.55 * smoothstep(0.66, 0.7, spot) - 0.3 * smoothstep(0.6, 0.66, spot);
+        // bright faculae near the limb
+        col += cLight * 0.25 * smoothstep(0.62, 0.8, fine) * (1.0 - clamp(dot(normalize(vN), normalize(cameraPosition - vW)), 0.0, 1.0));
         float mu = clamp(dot(normalize(vN), normalize(cameraPosition - vW)), 0.0, 1.0);
         col *= 0.45 + 0.55 * pow(mu, 0.5);
         gl_FragColor = vec4(col * 1.7, uOpacity);
