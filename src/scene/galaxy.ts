@@ -1,9 +1,8 @@
 // Procedural point clouds: galaxies (authored in their own plane, z = thickness) and the cosmic web.
 import { Vector3 } from 'three';
-import { gauss, rng } from '../lib/coords.ts';
-import type { cloud } from './PointCloud.tsx';
+import { gauss, rng } from '../lib/random.ts';
+import type { Cloud } from './cloud.ts';
 
-type Cloud = ReturnType<typeof cloud>;
 
 type RGB = readonly [number, number, number];
 const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];

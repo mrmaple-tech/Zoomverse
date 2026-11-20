@@ -5,26 +5,23 @@ import { galDir } from '../lib/coords.ts';
 import { shellMaterial } from '../scene/materials.ts';
 import { Label } from '../scene/Label.tsx';
 import { Fader } from '../scene/Space.tsx';
-import { PointCloud, cloud } from '../scene/PointCloud.tsx';
-import { web } from '../scene/galaxy.ts';
+import { PointCloud } from '../scene/PointCloud.tsx';
+import { useCloud, type CloudStep } from '../scene/useCloud.ts';
 
 const LAYER = LAYERS[7];
 const EDGE_FADE = [25.3, 26.1, Infinity, Infinity] as const;
+const NEAR: CloudStep[] = [{ gen: 'web', opts: { seed: 5, nodes: W.nearNodes, rMin: 0, rMax: W.nearRadiusMpc, scatter: 5, perLink: 22, perNode: 25 } }];
+// ponytail: the far field reuses the same generator at a coarser scale; real filaments don't grow with distance
+const FAR: CloudStep[] = [{ gen: 'web', opts: { seed: 6, nodes: W.farNodes, rMin: W.nearRadiusMpc, rMax: OU.radiusMpc, scatter: 110, perLink: 14, perNode: 12 } }];
 
 export function CosmicWebLayer() {
-  const [near, far] = useMemo(() => {
-    const n = cloud(), f = cloud();
-    web(n, 5, W.nearNodes, 0, W.nearRadiusMpc, 5, 22, 25);
-    // ponytail: the far field reuses the same generator at a coarser scale; real filaments don't grow with distance
-    web(f, 6, W.farNodes, W.nearRadiusMpc, OU.radiusMpc, 110, 14, 12);
-    return [n.build(), f.build()];
-  }, []);
+  const near = useCloud(NEAR), far = useCloud(FAR);
   const edge = useMemo(() => shellMaterial('#c08bff', 0.35), []);
   return (
     <Fader window={LAYER.fade}>
       {/* World-sized points: distant ones drop to faint single pixels instead of overdrawing the screen. */}
-      <PointCloud geometry={near} worldSize={1} />
-      <PointCloud geometry={far} worldSize={9} />
+      {near && <PointCloud geometry={near} worldSize={1} />}
+      {far && <PointCloud geometry={far} worldSize={9} />}
       {STRUCTURES.map((s) => (
         <Label key={s.id} id={s.id} text={s.name} window={s.distMpc > 150 ? [24.3, 24.8, 26, 26.6] : s.distMpc < 50 ? [23.4, 23.8, 24.8, 25.15] : [23.6, 24.0, 25.4, 26]} position={galDir(s.l, s.b).multiplyScalar(s.distMpc).toArray()} />
       ))}

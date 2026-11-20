@@ -33,7 +33,8 @@ export const exoLook = (p: Exoplanet) => KIND[p.kind].look;
 export const HOST_RADIUS: Record<string, number> = {
   'Proxima Centauri': 0.154, "Barnard's Star": 0.187, 'Lalande 21185': 0.392, Ran: 0.735, 'Ross 128': 0.197, "Luyten's Star": 0.35,
   'Wolf 1061': 0.307, 'Gl 876': 0.376, 'Gl 581': 0.299, 'Gl 667C': 0.42, Copernicus: 0.943, Titawin: 1.48, Chalawan: 1.17,
-  Pollux: 9.06, Errai: 4.9, 'TRAPPIST-1': 0.119,
+  Pollux: 9.06, Errai: 4.9, 'TRAPPIST-1': 0.119, 'Gl 54.1': 0.157, 'GJ 1061': 0.156, 'Lacaille 9352': 0.47, 'Groombridge 34': 0.38,
+  'Gl 892': 0.778, 'Gl 674': 0.36, 'Gl 687': 0.42, 'Gl 832': 0.48, 'Gl 849': 0.46, 'Gl 357': 0.337, 'Kepler-1625': 1.79, 'Kepler-1708': 1.12,
 };
 
 const p = (id: string, name: string, host: string, a: number, periodDays: number, radiusEarth: number, kind: Kind, year: number, fact: string): Exoplanet =>
@@ -78,6 +79,31 @@ export const EXOPLANETS: Exoplanet[] = [
   p('taphao-kaew', 'Taphao Kaew (47 UMa c)', 'Chalawan', 3.6, 2391, 11, 'giant', 2002, 'A Saturn-like partner further out in the 47 Ursae Majoris system.'),
   p('thestias', 'Thestias (Pollux b)', 'Pollux', 1.64, 589.6, 11.5, 'giant', 2006, 'A giant planet around Pollux, an orange giant: the brightest star in our sky known to host a planet.'),
   p('tadmor', 'Tadmor (Gamma Cephei Ab)', 'Errai', 2.05, 903, 11, 'giant', 2003, 'Suspected back in 1988, it was one of the first exoplanets ever proposed. Its star has a red-dwarf companion.'),
+  p('yz-ceti-b', 'YZ Ceti b', 'Gl 54.1', 0.0163, 2.02, 0.9, 'rocky', 2017, 'Radio bursts from its star, seen in 2023, hint that this planet has a magnetic field like Earth\'s.'),
+  p('yz-ceti-c', 'YZ Ceti c', 'Gl 54.1', 0.0216, 3.06, 1.04, 'rocky', 2017, 'One of three small rocky planets packed tightly around the red dwarf YZ Ceti.'),
+  p('yz-ceti-d', 'YZ Ceti d', 'Gl 54.1', 0.0285, 4.66, 1.02, 'rocky', 2017, 'The outermost of YZ Ceti\'s three known planets, still far too hot for liquid water.'),
+  p('gj-1061-b', 'GJ 1061 b', 'GJ 1061', 0.021, 3.204, 1.09, 'rocky', 2019, 'A hot rocky planet around one of the 20 closest stars to the Sun.'),
+  p('gj-1061-c', 'GJ 1061 c', 'GJ 1061', 0.035, 6.689, 1.16, 'temperate', 2019, 'In the habitable zone of a calm red dwarf just 12 light-years away.'),
+  p('gj-1061-d', 'GJ 1061 d', 'GJ 1061', 0.054, 13.03, 1.14, 'temperate', 2019, 'At the cool outer edge of its star\'s habitable zone.'),
+  p('lacaille-9352-b', 'Lacaille 9352 b', 'Lacaille 9352', 0.068, 9.26, 1.47, 'super', 2020, 'A hot super-Earth around one of the brightest red dwarfs in our sky.'),
+  p('lacaille-9352-c', 'Lacaille 9352 c', 'Lacaille 9352', 0.12, 21.79, 1.7, 'super', 2020, 'A super-Earth just inside the warm edge of the habitable zone.'),
+  p('gj-15a-b', 'Groombridge 34 Ab', 'Groombridge 34', 0.072, 11.44, 1.35, 'super', 2014, 'A hot super-Earth in a pair of red dwarfs that circle each other every few thousand years.'),
+  p('gj-15a-c', 'Groombridge 34 Ac', 'Groombridge 34', 5.4, 7600, 5.5, 'neptune', 2018, 'A cold world about 36 times Earth\'s mass, taking over 20 years to orbit.'),
+  p('hd-219134-b', 'HD 219134 b', 'Gl 892', 0.0388, 3.093, 1.6, 'lava', 2015, 'When found, the closest rocky planet known to cross in front of its star, letting astronomers measure its size directly.'),
+  p('hd-219134-c', 'HD 219134 c', 'Gl 892', 0.065, 6.765, 1.51, 'rocky', 2015, 'A second transiting rocky world, about 1.5 times Earth\'s width.'),
+  p('hd-219134-f', 'HD 219134 f', 'Gl 892', 0.146, 22.72, 1.7, 'super', 2015, 'A super-Earth in a packed system of six planets.'),
+  p('hd-219134-d', 'HD 219134 d', 'Gl 892', 0.237, 46.86, 2.2, 'super', 2015, 'About 16 times Earth\'s mass: a large super-Earth or a small Neptune.'),
+  p('hd-219134-g', 'HD 219134 g', 'Gl 892', 0.375, 94.2, 2.0, 'super', 2015, 'About 11 times Earth\'s mass, near the warm edge of the habitable zone.'),
+  p('hd-219134-h', 'HD 219134 h', 'Gl 892', 3.11, 2100, 9, 'giant', 2015, 'A Saturn-like giant on the outskirts of the system.'),
+  p('gj-674-b', 'GJ 674 b', 'Gl 674', 0.039, 4.694, 3.5, 'neptune', 2007, 'A Neptune-mass planet whipping around its red dwarf in under five days.'),
+  p('gj-687-b', 'GJ 687 b', 'Gl 687', 0.164, 38.14, 4, 'neptune', 2014, 'A Neptune-mass world around one of the closest stars in the northern sky.'),
+  p('gj-832-b', 'GJ 832 b', 'Gl 832', 3.4, 3660, 11, 'giant', 2008, 'A Jupiter-like giant around a red dwarf, at roughly Jupiter\'s distance from the Sun.'),
+  p('gj-849-b', 'GJ 849 b', 'Gl 849', 2.35, 1882, 11, 'giant', 2006, 'One of the few Jupiter-mass planets known around a red dwarf.'),
+  p('gj-357-b', 'GJ 357 b', 'Gl 357', 0.035, 3.93, 1.22, 'rocky', 2019, 'A hot Earth found by the TESS satellite as it crossed in front of its star.'),
+  p('gj-357-c', 'GJ 357 c', 'Gl 357', 0.061, 9.12, 1.4, 'super', 2019, 'A super-Earth between the hot inner planet and the habitable-zone world d.'),
+  p('gj-357-d', 'GJ 357 d', 'Gl 357', 0.204, 55.7, 1.6, 'temperate', 2019, 'A super-Earth in the habitable zone: with a thick enough atmosphere it could hold liquid water.'),
+  p('kepler-1625-b', 'Kepler-1625 b', 'Kepler-1625', 0.874, 287.4, 11.4, 'giant', 2016, 'A Jupiter-sized giant about 8,000 light-years away, with a possible Neptune-sized moon.'),
+  p('kepler-1708-b', 'Kepler-1708 b', 'Kepler-1708', 1.64, 737.1, 10, 'giant', 2021, 'A Jupiter-sized giant about 5,500 light-years away, with a possible moon 2.6 times Earth\'s width.'),
   p('trappist-1b', 'TRAPPIST-1b', 'TRAPPIST-1', 0.01154, 1.511, 1.116, 'rocky', 2016, 'The Webb telescope measured its dayside at about 230 °C, with no thick atmosphere. ' + TRAPPIST),
   p('trappist-1c', 'TRAPPIST-1c', 'TRAPPIST-1', 0.0158, 2.422, 1.097, 'rocky', 2016, TRAPPIST),
   p('trappist-1d', 'TRAPPIST-1d', 'TRAPPIST-1', 0.02227, 4.05, 0.788, 'temperate', 2016, 'At the warm inner edge of the habitable zone. ' + TRAPPIST),
@@ -108,4 +134,22 @@ export function exoOffset(pl: Exoplanet, ms: number, out = new Vector3()) {
   for (const ch of pl.id) h = (h * 33 + ch.charCodeAt(0)) | 0;
   const th = ((h & 4095) / 4095) * Math.PI * 2 + (2 * Math.PI * (ms - J2000)) / (pl.periodDays * 864e5);
   return out.set(Math.cos(th) * pl.a, 0, -Math.sin(th) * pl.a).applyQuaternion(systemTilt(pl.host));
+}
+
+/**
+ * No moon of an exoplanet has been confirmed. These are the two strongest candidates, each spotted as an
+ * extra dip in its planet's transit light; both are still debated.
+ */
+export interface Exomoon { id: string; name: string; planet: string; km: number; periodDays: number; radiusEarth: number; year: number; fact: string }
+export const EXOMOONS: Exomoon[] = [
+  { id: 'exo-kepler-1625-b-i', name: 'Kepler-1625 b-i (candidate)', planet: 'exo-kepler-1625-b', km: 3.2e6, periodDays: 22, radiusEarth: 4, year: 2018,
+    fact: 'A candidate moon as big as Neptune, far larger than any moon in our solar system. Not yet confirmed.' },
+  { id: 'exo-kepler-1708-b-i', name: 'Kepler-1708 b-i (candidate)', planet: 'exo-kepler-1708-b', km: 7.6e5, periodDays: 4.6, radiusEarth: 2.6, year: 2021,
+    fact: 'A candidate moon about 2.6 times Earth\'s width, found in old Kepler data. Not yet confirmed.' },
+];
+
+/** Moon's offset from its planet (AU) at time `ms`, on a tilted circular orbit. */
+export function moonOffset(m: Exomoon, ms: number, out = new Vector3()) {
+  const th = (2 * Math.PI * (ms - J2000)) / (m.periodDays * 864e5);
+  return out.set(Math.cos(th), 0, -Math.sin(th)).multiplyScalar((m.km * 1e3) / 1.495978707e11).applyQuaternion(systemTilt(m.id));
 }

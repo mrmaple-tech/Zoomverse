@@ -1,28 +1,18 @@
 import { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { BufferAttribute, BufferGeometry } from 'three';
+import type { BufferGeometry } from 'three';
+import { cloud as rawCloud } from './cloud.ts';
+import { toGeometry } from './useCloud.ts';
 import type { ThreeEvent } from '@react-three/fiber';
 import { pointsMaterial } from './materials.ts';
 import { useStore } from '../store.ts';
 
 const J2000 = Date.UTC(2000, 0, 1, 12);
 
-/** Builder for point clouds: push(x, y, z, r, g, b, sizePx). */
+/** Builder for small point clouds made on the main thread: push(x, y, z, r, g, b, sizePx), then build(). */
 export function cloud() {
-  const p: number[] = [], c: number[] = [], s: number[] = [], v: number[] = [];
-  return {
-    push(x: number, y: number, z: number, r: number, g: number, b: number, size: number, speed = 0) {
-      p.push(x, y, z); c.push(r, g, b); s.push(size); v.push(speed);
-    },
-    build() {
-      const geo = new BufferGeometry();
-      geo.setAttribute('position', new BufferAttribute(new Float32Array(p), 3));
-      geo.setAttribute('color', new BufferAttribute(new Float32Array(c), 3));
-      geo.setAttribute('size', new BufferAttribute(new Float32Array(s), 1));
-      geo.setAttribute('aSpeed', new BufferAttribute(new Float32Array(v), 1));
-      return geo;
-    },
-  };
+  const c = rawCloud();
+  return { push: c.push, build: () => toGeometry(c.arrays()) };
 }
 
 interface Props {

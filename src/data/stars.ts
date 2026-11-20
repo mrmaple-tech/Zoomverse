@@ -3,7 +3,13 @@ import raw from './stars.json';
 /** HYG v4.1 row, trimmed: [name, x, y, z (pc, equatorial J2000), apparent mag, absolute mag, B−V color index, spectral type]. */
 export type StarRow = [string, number, number, number, number, number, number, string];
 // TRAPPIST-1 is too faint for the catalog's cut, but it's the most famous planetary system beyond ours.
-export const STARS = [...(raw as StarRow[]), ['TRAPPIST-1', 12.085, -2.874, -1.096, 18.8, 18.4, 2.0, 'M8V'] as StarRow];
+// Kepler-1625 and -1708 (far beyond the catalog, positions approximate) host the two best exomoon candidates.
+export const STARS = [
+  ...(raw as StarRow[]),
+  ['TRAPPIST-1', 12.085, -2.874, -1.096, 18.8, 18.4, 2.0, 'M8V'],
+  ['Kepler-1625', 807.6, -1698.4, 1571.2, 15.8, 3.85, 0.75, 'G'],
+  ['Kepler-1708', 433, -1146, 1179, 15.2, 4.0, 0.55, 'F'],
+] as StarRow[];
 
 /** Stars that get a permanent label and a fun fact. Names match HYG `proper` names. */
 export const FAMOUS_STARS: Record<string, string> = {
@@ -26,5 +32,7 @@ export const FAMOUS_STARS: Record<string, string> = {
   Betelgeuse: 'A red supergiant expected to go supernova within ~100,000 years. It dimmed dramatically in 2019–20.',
   Rigel: 'A blue supergiant roughly 100,000 times more luminous than the Sun.',
   'TRAPPIST-1': 'A dim red dwarf barely bigger than Jupiter, with seven Earth-sized planets: three of them in the zone where liquid water could exist.',
+  'Kepler-1625': 'A Sun-like star about 8,000 light-years away whose giant planet may have a Neptune-sized moon.',
+  'Kepler-1708': 'A star about 5,500 light-years away whose giant planet may have a moon, one of the two best exomoon candidates.',
   Deneb: 'One of the most luminous stars visible to the naked eye, yet over 400 parsecs away.',
 };

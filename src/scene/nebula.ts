@@ -1,10 +1,9 @@
 // Procedural nebulae as point clouds of soft, overlapping gas puffs. Each is authored facing +Z, which
 // the layer turns toward Earth, so dark dust can be cut out as silhouettes in the XY plane: you arrive
 // looking at it the way telescopes do.
-import { gauss, rng } from '../lib/coords.ts';
-import type { cloud } from './PointCloud.tsx';
+import { gauss, rng } from '../lib/random.ts';
+import type { Cloud } from './cloud.ts';
 
-type Cloud = ReturnType<typeof cloud>;
 type RGB = readonly [number, number, number];
 const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };

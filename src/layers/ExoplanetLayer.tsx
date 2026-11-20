@@ -1,13 +1,13 @@
 // Planets of other stars, drawn in AU like our own. A system is only built while you're at its star
 // or one of its planets, so dozens of systems cost nothing until you visit one.
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3 } from 'three';
-import { EXOPLANETS, exoLook, exoOffset, type Exoplanet } from '../data/exoplanets.ts';
+import { Vector3, type Group } from 'three';
+import { EXOMOONS, EXOPLANETS, exoLook, exoOffset, moonOffset, type Exomoon, type Exoplanet } from '../data/exoplanets.ts';
 import type { Fade } from '../data/layers.ts';
 import { get } from '../catalog.ts';
 import { AU } from '../lib/coords.ts';
-import { useStore } from '../store.ts';
+import { simDate, useStore } from '../store.ts';
 import { Body } from '../scene/Body.tsx';
 import { Orbit } from '../scene/Orbit.tsx';
 import { Fader, K } from '../scene/Space.tsx';
@@ -40,6 +40,7 @@ function System({ star, planets }: { star: string; planets: Exoplanet[] }) {
   return (
     <>
       {planets.map((p) => <Planet key={p.id} p={p} light={light} window={window} />)}
+      {EXOMOONS.filter((m) => planets.some((p) => p.id === m.planet)).map((m) => <Moon key={m.id} m={m} light={light} window={window} />)}
       <Fader window={window}>
         <group position={center.clone().divideScalar(AU).toArray()}>
           {planets.map((p) => <Orbit key={p.id} sample={(f) => exoOffset(p, Date.UTC(2000, 0, 1, 12) + f * p.periodDays * 864e5)} color="#9fb3d9" opacity={0.3} />)}
@@ -58,5 +59,21 @@ function Planet({ p, light, window }: { p: Exoplanet; light: { value: Vector3 };
       <primitive object={material} attach="material" />
       {halo && <mesh scale={1.04} material={halo}><sphereGeometry args={[1, 64, 32]} /></mesh>}
     </Body>
+  );
+}
+
+const MOON_LOOK = { colors: ['#4a6fa8', '#9db8e0', '#2c4778'] as [string, string, string], bands: 6, turb: 1.5, rim: 0.6 };
+
+/** A candidate exomoon, with its orbit line riding along with its planet. */
+function Moon({ m, light, window }: { m: Exomoon; light: { value: Vector3 }; window: Fade }) {
+  const material = useMemo(() => planetMaterial(MOON_LOOK, 5, light), [light]);
+  const ref = useRef<Group>(null!);
+  useFrame(() => ref.current.position.copy(get(m.planet).pos(simDate())).divideScalar(AU));
+  const sample = useMemo(() => (f: number) => moonOffset(m, Date.UTC(2000, 0, 1, 12) + f * m.periodDays * 864e5), [m]);
+  return (
+    <>
+      <Body id={m.id} window={window}><primitive object={material} attach="material" /></Body>
+      <Fader window={window}><group ref={ref}><Orbit sample={sample} color="#c7d3ea" opacity={0.3} /></group></Fader>
+    </>
   );
 }

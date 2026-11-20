@@ -6,8 +6,8 @@ import { GAL_BASIS, galDir } from '../lib/coords.ts';
 import { Inspectable } from '../scene/Inspectable.tsx';
 import { Glow } from '../scene/Glow.tsx';
 import { Fader } from '../scene/Space.tsx';
-import { PointCloud, cloud } from '../scene/PointCloud.tsx';
-import { addElliptical, addIrregular, addMerger, addRing, addSpiral } from '../scene/galaxy.ts';
+import { PointCloud } from '../scene/PointCloud.tsx';
+import { useCloud, type CloudStep } from '../scene/useCloud.ts';
 
 const LAYER = LAYERS[6];
 const D = Math.PI / 180;
@@ -24,15 +24,8 @@ const LABEL: Record<Galaxy['zone'], Fade> = {
   deep: [23.8, 24.2, 25.0, 25.5], // hundreds of millions of light-years out
 };
 
-function build(g: Galaxy, seed: number, count: number, bright: number) {
-  const c = cloud(), o = { radius: g.diameterKpc / 2, seed, count, bright, ...g.opts };
-  if (g.shape === 'spiral') addSpiral(c, o);
-  else if (g.shape === 'elliptical') addElliptical(c, o);
-  else if (g.shape === 'ring') addRing(c, o);
-  else if (g.shape === 'merger') addMerger(c, o);
-  else addIrregular(c, o);
-  return c.build();
-}
+const recipe = (g: Galaxy, seed: number, count: number, bright: number): CloudStep[] =>
+  [{ gen: g.shape, opts: { radius: g.diameterKpc / 2, seed, count, bright, ...g.opts } }];
 
 /** Disk orientation as seen from Earth: tilted `incl` away from facing us, about an axis turned by `pa`. */
 function orient(g: Galaxy) {
@@ -48,29 +41,27 @@ function GalaxyView({ g, seed }: { g: Galaxy; seed: number }) {
   return (
     <Inspectable
       id={g.id} name={g.name} window={SHOWN[g.zone]} label={LABEL[g.zone]} position={pos} quaternion={quat}
-      coarse={() => build(g, seed, coarseN, 2.4)}
+      coarse={recipe(g, seed, coarseN, 2.4)}
       // same total light, spread over more, smaller stars
-      fine={() => build(g, seed, fineN, 2.4 * 2.2 * (coarseN / fineN) ** 0.5)}
+      fine={recipe(g, seed, fineN, 2.4 * 2.2 * (coarseN / fineN) ** 0.5)}
       size={[g.diameterKpc * POINT, g.diameterKpc * POINT_DETAIL]}
       glow={{ size: g.diameterKpc * 0.6, color: g.shape === 'irregular' ? '#cfdcff' : '#ffe2bd' }}
     />
   );
 }
 
+const HOME: CloudStep[] = [{ gen: 'spiral', opts: { count: MW.diameterKpc * 220, radius: MW.diameterKpc / 2, cx: MW.sunDistKpc, seed: 3, bright: 2.4 } }];
+
 export function LocalGroupLayer() {
   // A lighter Milky Way at the same point density as its neighbors (the full one fades out before here).
-  const home = useMemo(() => {
-    const c = cloud();
-    addSpiral(c, { count: MW.diameterKpc * 220, radius: MW.diameterKpc / 2, cx: MW.sunDistKpc, seed: 3, bright: 2.4 });
-    return c.build();
-  }, []);
+  const home = useCloud(HOME);
   return (
     <>
       {/* takes over as the full Milky Way layer fades out, so the two never stack */}
       <Fader window={LAYER.fade}>
         <Fader window={[LAYERS[5].fade[2], LAYERS[5].fade[3], Infinity, Infinity]}>
           <group matrix={GAL_BASIS} matrixAutoUpdate={false}>
-            <PointCloud geometry={home} worldSize={MW.diameterKpc * POINT} />
+            {home && <PointCloud geometry={home} worldSize={MW.diameterKpc * POINT} />}
             <Glow size={MW.diameterKpc * 0.5} color="#ffd8a8" opacity={0.7} position={[MW.sunDistKpc, 0, 0]} />
           </group>
         </Fader>

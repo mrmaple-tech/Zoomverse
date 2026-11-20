@@ -9,7 +9,7 @@ import { BODIES, HELIO_OBJECTS, PROBES, SUN } from './data/solarSystem.ts';
 import { SATELLITES } from './data/satellites.ts';
 import { satOffset } from './lib/satellites.ts';
 import { FAMOUS_STARS, STARS } from './data/stars.ts';
-import { EXOPLANETS, HOST_RADIUS, exoOffset, exoType } from './data/exoplanets.ts';
+import { EXOMOONS, EXOPLANETS, HOST_RADIUS, exoOffset, exoType, moonOffset } from './data/exoplanets.ts';
 import { GALAXIES, LOCAL_GROUP_CENTER as LGC, MILKY_WAY, NEBULAE, OBSERVABLE_UNIVERSE, SGR_A, STRUCTURES } from './data/deepSky.ts';
 
 export interface CatalogObject {
@@ -113,6 +113,14 @@ export const CATALOG: CatalogObject[] = [
       id: e.id, name: e.name, type: `Exoplanet · ${exoType(e)}`, fact: `${e.fact} Discovered ${e.year}.`, host: `star-${host}`,
       ...solid(e.radiusEarth * 6371, 4.5),
       pos: (t: Date) => exoOffset(e, t.getTime(), v).multiplyScalar(AU).add(star),
+    };
+  }),
+  ...EXOMOONS.map((m) => {
+    const v = new Vector3();
+    return {
+      id: m.id, name: m.name, type: 'Exomoon candidate', host: `star-${STARS.findIndex((s) => s[0] === EXOPLANETS.find((e) => e.id === m.planet)!.host)}`, fact: `${m.fact} Reported ${m.year}.`,
+      ...solid(m.radiusEarth * 6371, 4.5),
+      pos: (t: Date) => moonOffset(m, t.getTime(), v).multiplyScalar(AU).add(get(m.planet).pos(t)),
     };
   }),
   (() => {

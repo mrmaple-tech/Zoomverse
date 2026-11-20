@@ -51,20 +51,25 @@ function Precompile() {
         const m = (o as Mesh).material as Material | undefined;
         if (m && !Array.isArray(m) && !('uniforms' in m)) m.transparent = true;
       }));
+      const mats = new Set<Material>();
+      scene.traverse((o) => { const m = (o as Mesh).material; if (m && !Array.isArray(m)) mats.add(m); });
       const rt = new WebGLRenderTarget(1, 1), prev = gl.getRenderTarget();
       gl.setRenderTarget(rt);
-      const mats = [...gl.compile(scene, camera)];
+      // creates every program now, then waits for the GPU to finish them in parallel without blocking
+      // (KHR_parallel_shader_compile); the first draw with a half-built program would stall for its compile
+      const ready = gl.compileAsync(scene, camera);
       gl.setRenderTarget(prev);
       rt.dispose();
       hidden.forEach((o) => { o.visible = false; });
-      // browsers link lazily: fetching uniforms finishes each link now, one per idle slot, not mid-zoom
+      // then finish each link (cheap once compiled), one per idle slot, so none is left for mid-zoom
+      const list = [...mats];
       const next = () => {
-        const m = mats.pop();
+        const m = list.pop();
         if (!m) return;
         (gl.properties.get(m) as { currentProgram?: { getUniforms(): unknown } }).currentProgram?.getUniforms();
         idle(next);
       };
-      idle(next);
+      ready.then(() => idle(next));
     }, 100);
     return () => clearTimeout(id);
   }, [gl, scene, camera]);
@@ -72,16 +77,18 @@ function Precompile() {
 }
 
 /**
- * Quality tiers for slow GPUs: 2 = full, 1 = lower resolution, 0 = also no bloom. Quality only ever
+ * Quality tiers for slow GPUs: 3 = full, 2 = 1.5× resolution, 1 = 1×, 0 = also no bloom. Quality only ever
  * steps down: flipping back and forth rebuilt the effect chain (shader compiles + resizes) each time,
  * which was itself a source of stutter.
  */
 // top tier: full sharpness on high-DPI screens (capped at 2), 1.5 on ordinary ones
 export const TOP_DPR = Math.max(1.5, Math.min(2, window.devicePixelRatio));
-const DPR = [1, 1, TOP_DPR];
+const DPR = [1, 1, Math.min(1.5, TOP_DPR), TOP_DPR];
+// step down whenever the frame rate sags below ~55 fps (at 60 Hz; proportionally on faster screens)
+const BOUNDS = (hz: number) => [Math.min(55, hz * 0.85), hz] as [number, number];
 
 export function Universe() {
-  const [tier, setTier] = useState(2);
+  const [tier, setTier] = useState(3);
   // Layers 4–8 generate hundreds of thousands of procedural points; build them once the browser
   // is idle after the first paint so Earth appears immediately.
   const [far, setFar] = useState(false);
@@ -115,7 +122,7 @@ export function Universe() {
   return (
     <>
       <color attach="background" args={['#020308']} />
-      {watch && <PerformanceMonitor onDecline={() => step(-1)} />}
+      {watch && <PerformanceMonitor bounds={BOUNDS} onDecline={() => step(-1)} />}
       <ambientLight intensity={0.06} />
       <Stars radius={300} depth={80} count={7000} factor={5} saturation={0.4} fade />
       <Rig />
