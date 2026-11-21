@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../store.ts';
 import { CATALOG, byId } from '../catalog.ts';
 import { LAYERS, layerAt } from '../data/layers.ts';
@@ -11,53 +11,100 @@ import { SATELLITES } from '../data/satellites.ts';
 const SAT_LABEL = Object.fromEntries(SATELLITES.map((s) => [s.id, s.label]));
 
 const FOV = (50 * Math.PI) / 180;
-const NAMES = [...new Set(CATALOG.map((o) => o.name))].sort();
+type Obj = (typeof CATALOG)[number];
+const LOWER = CATALOG.map((o) => [o, o.name.toLowerCase()] as const);
 
-function go(name: string) {
-  const q = name.trim().toLowerCase();
-  if (!q) return false;
-  // exact name, then names starting with it, then whole-word matches ("crab" → Crab Nebula, not Acrab), then anywhere
-  const lc = (o: (typeof CATALOG)[number]) => o.name.toLowerCase();
-  const hit = CATALOG.find((o) => lc(o) === q) ?? CATALOG.find((o) => lc(o).startsWith(q))
-    ?? CATALOG.find((o) => lc(o).includes(` ${q}`) || lc(o).includes(`(${q}`)) ?? CATALOG.find((o) => lc(o).includes(q));
-  if (!hit) return false;
+/**
+ * Best matches first: exact name, then names starting with the query, then a word in the name starting
+ * with it ("crab" → Crab Nebula before Acrab), then anywhere; shorter names first within a tier.
+ */
+export function rank(query: string, limit = 8): Obj[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const scored: [number, Obj][] = [];
+  for (const [o, n] of LOWER) {
+    const word = n.includes(` ${q}`) || n.includes(`(${q}`) || n.includes(`-${q}`);
+    const tier = n === q ? 0 : n.startsWith(q) ? 1 : word ? 2 : n.includes(q) ? 3 : -1;
+    if (tier >= 0) scored.push([tier * 1000 + n.length, o]);
+  }
+  return scored.sort((x, y) => x[0] - y[0]).slice(0, limit).map(([, o]) => o);
+}
+
+function go(o: Obj) {
   const s = useStore.getState();
-  s.select(hit.id);
-  s.flyTo(hit.id);
-  return true;
+  s.select(o.id);
+  s.flyTo(o.id);
 }
 
 function Search() {
   const [q, setQ] = useState('');
-  const [miss, setMiss] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const results = useMemo(() => rank(q), [q]);
+  // "/" jumps to the search box, as on most sites
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === '/' && !(e.target as HTMLElement).closest('input, textarea, select')) { e.preventDefault(); input.current?.focus(); }
+    };
+    addEventListener('keydown', key);
+    return () => removeEventListener('keydown', key);
+  }, []);
+  const pick = (o: Obj) => {
+    go(o);
+    setQ(o.name);
+    setOpen(false);
+    input.current?.blur();
+  };
+  const shown = open && q.trim() !== '';
   return (
-    <form
-      className="search"
-      role="search"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const ok = go(q);
-        setMiss(!ok);
-        if (ok) (document.activeElement as HTMLElement)?.blur();
-      }}
-    >
+    <form className="search" role="search" onSubmit={(e) => { e.preventDefault(); if (results[active]) pick(results[active]); }}>
       <SearchIcon />
       <label htmlFor="search" className="sr-only">Search for an object</label>
       <input
+        ref={input}
         id="search"
-        list="objects"
+        role="combobox"
+        aria-expanded={shown}
+        aria-controls="search-results"
+        aria-activedescendant={shown && results[active] ? `result-${active}` : undefined}
+        autoComplete="off"
+        spellCheck={false}
         placeholder="Search the universe"
         value={q}
-        aria-invalid={miss}
-        onChange={(e) => {
-          setQ(e.target.value);
-          setMiss(false);
-          // picking from the native suggestion list fires change with an exact name
-          if (NAMES.includes(e.target.value) && go(e.target.value)) (e.target as HTMLInputElement).blur();
+        onChange={(e) => { setQ(e.target.value); setActive(0); setOpen(true); }}
+        onFocus={(e) => { e.target.select(); setOpen(true); }}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            setOpen(true);
+            const n = results.length || 1;
+            setActive((i) => (i + (e.key === 'ArrowDown' ? 1 : n - 1)) % n);
+          } else if (e.key === 'Escape') {
+            if (shown) setOpen(false); else { setQ(''); input.current?.blur(); }
+          }
         }}
       />
-      <datalist id="objects">{NAMES.map((n) => <option key={n} value={n} />)}</datalist>
-      {miss && <span className="miss" role="status">No match</span>}
+      {q && <button type="button" className="search-clear" aria-label="Clear search" onMouseDown={(e) => e.preventDefault()} onClick={() => { setQ(''); input.current?.focus(); }}>×</button>}
+      {shown && (
+        <ul id="search-results" className="search-results glass" role="listbox">
+          {results.length ? results.map((o, i) => (
+            <li
+              key={o.id}
+              id={`result-${i}`}
+              role="option"
+              aria-selected={i === active}
+              onMouseDown={(e) => e.preventDefault()} // keep focus so the click lands
+              onMouseEnter={() => setActive(i)}
+              onClick={() => pick(o)}
+            >
+              <span className="name">{o.name}</span>
+              <span className="type">{o.type}</span>
+            </li>
+          )) : <li className="empty" role="status">No matches for “{q.trim()}”</li>}
+        </ul>
+      )}
     </form>
   );
 }
