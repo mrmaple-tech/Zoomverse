@@ -15,7 +15,7 @@ function hash(x: number, y: number, z: number) {
   h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
   return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
 }
-function noise(x: number, y: number, z: number) {
+export function noise(x: number, y: number, z: number) {
   const X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z);
   const f = (t: number) => t * t * (3 - 2 * t), u = f(x - X), v = f(y - Y), w = f(z - Z);
   const l = (a: number, b: number, t: number) => a + (b - a) * t;

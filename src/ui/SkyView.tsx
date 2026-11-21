@@ -16,6 +16,8 @@ import { hasElements } from '../lib/satellites.ts';
 import { look, sunlit } from '../lib/passes.ts';
 import { PointCloud, cloud } from '../scene/PointCloud.tsx';
 import { Glow } from '../scene/Glow.tsx';
+import { noise, ridged } from '../scene/nebula.ts';
+import { MOBILE } from '../lib/device.ts';
 import { Close } from './icons.tsx';
 
 const GREENWICH = { lat: 51.48, lon: 0 };
@@ -110,6 +112,79 @@ const moonMaterial = () =>
       }`,
   });
 
+/**
+ * Stars as the eye sees them: a sharp core in a soft glow, sized and lit by magnitude, twinkling (more
+ * strongly low down, where the light crosses more turbulent air), and dimmed and reddened near the horizon
+ * by the thicker air. With uTwinkle 0 it draws the Milky Way's soft glows the same way.
+ */
+const starMaterial = (twinkle: number) => new ShaderMaterial({
+  transparent: true, depthWrite: false, blending: AdditiveBlending,
+  uniforms: { uTime: { value: 0 }, uOpacity: { value: 1 }, uPx: { value: Math.min(devicePixelRatio, 2) }, uTwinkle: { value: twinkle } },
+  vertexShader: /* glsl */ `
+    attribute vec3 color; attribute float size; attribute float aPhase;
+    uniform float uTime, uPx, uTwinkle; varying vec3 vColor; varying float vCore;
+    void main() {
+      vec4 w = modelMatrix * vec4(position, 1.0);
+      float alt = normalize(w.xyz).y;                                  // the sky group carries the horizon frame
+      float air = 1.0 / max(alt + 0.03, 0.03);                         // how much air the light crosses
+      float clear = exp(-0.12 * (air - 1.0));
+      float low = 1.0 - smoothstep(0.0, 0.6, alt);
+      float tw = 1.0 + uTwinkle * (0.12 + 0.45 * low) * sin(uTime * (6.0 + aPhase * 5.0) + aPhase * 40.0) * sin(uTime * 2.3 + aPhase * 17.0);
+      vColor = color * clear * tw * vec3(1.0, 0.82 + 0.18 * clear, 0.62 + 0.38 * clear);
+      vCore = size;
+      gl_Position = projectionMatrix * viewMatrix * w;
+      gl_PointSize = size * uPx * (0.85 + 0.15 * tw) * (0.6 + 0.4 * clear);
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform float uOpacity, uTwinkle; varying vec3 vColor; varying float vCore;
+    void main() {
+      float r = length(gl_PointCoord - 0.5) * 2.0;
+      // stars: a pinpoint core plus a gentle halo; Milky Way glows: just the soft falloff
+      float a = uTwinkle > 0.0 ? exp(-r * r * 9.0) + 0.45 * exp(-r * r * 3.0) * smoothstep(3.0, 9.0, vCore) : exp(-r * r * 4.5);
+      gl_FragColor = vec4(vColor, a * (1.0 - smoothstep(0.85, 1.0, r)) * uOpacity);
+    }`,
+});
+
+function starGeometry(points: number[][]) {
+  const g = new BufferGeometry(), n = points.length, pos = new Float32Array(n * 3), col = new Float32Array(n * 3), size = new Float32Array(n), ph = new Float32Array(n);
+  points.forEach(([x, y, z, r, gr, b, s, p], i) => { pos.set([x, y, z], i * 3); col.set([r, gr, b], i * 3); size[i] = s; ph[i] = p; });
+  g.setAttribute('position', new BufferAttribute(pos, 3));
+  g.setAttribute('color', new BufferAttribute(col, 3));
+  g.setAttribute('size', new BufferAttribute(size, 1));
+  g.setAttribute('aPhase', new BufferAttribute(ph, 1));
+  return g;
+}
+
+/** Now and then at night, a meteor streaks across the sky and fades. */
+function ShootingStars({ night }: { night: MutableRefObject<number> }) {
+  const line = useMemo(() => {
+    const g = new BufferGeometry();
+    g.setAttribute('position', new BufferAttribute(new Float32Array(2 * 3), 3));
+    g.setAttribute('color', new BufferAttribute(new Float32Array([1, 1, 1, 0, 0, 0]), 3));
+    return new LineSegments(g, new LineBasicMaterial({ vertexColors: true, transparent: true, blending: AdditiveBlending, depthWrite: false }));
+  }, []);
+  const st = useRef({ next: 4, t: -1, from: new Vector3(), dir: new Vector3(), len: 0 });
+  useFrame((_, dt) => {
+    const s = st.current, pos = line.geometry.getAttribute('position');
+    s.next -= dt;
+    if (s.t < 0 && s.next < 0 && night.current > 0.6) {
+      const r = Math.random, az = r() * Math.PI * 2, el = (25 + r() * 50) * D;
+      altAz(el, az, s.from);
+      s.dir.set(r() - 0.5, -0.4 - r() * 0.4, r() - 0.5).normalize().addScaledVector(s.from, -s.from.dot(s.dir)).normalize();
+      s.len = 0.12 + r() * 0.2; s.t = 0; s.next = 5 + r() * 12;
+    }
+    line.visible = s.t >= 0;
+    if (s.t < 0) return;
+    s.t += dt / 0.8;
+    const head = s.from.clone().addScaledVector(s.dir, s.len * s.t).normalize().multiplyScalar(R * 0.9);
+    const tail = s.from.clone().addScaledVector(s.dir, s.len * Math.max(0, s.t - 0.35)).normalize().multiplyScalar(R * 0.9);
+    pos.setXYZ(0, head.x, head.y, head.z); pos.setXYZ(1, tail.x, tail.y, tail.z); pos.needsUpdate = true;
+    (line.material as LineBasicMaterial).opacity = Math.sin(Math.min(1, s.t) * Math.PI) * night.current;
+    if (s.t > 1.3) s.t = -1;
+  });
+  return <primitive object={line} />;
+}
+
 interface Item { text: string; cls: string; dir: () => Vector3; local?: boolean; show?: () => boolean }
 
 /** Projects label directions to the screen each frame, hiding those below the horizon or behind the camera. */
@@ -188,36 +263,37 @@ interface SkyProps {
 }
 
 function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef, night, status }: SkyProps) {
-  const [stars, milky] = useMemo(() => {
-    const c = cloud();
+  const [stars, milky, starMat, milkyMat] = useMemo(() => {
+    const pts: number[][] = [], f = rng(4);
     for (const [ra, dec, mag, bv] of sky.stars) {
       const v = eq(ra, dec).multiplyScalar(R);
       const [r, g, b] = starColor(starTemp(bv));
-      const k = Math.min(1.8, 0.4 + (6 - mag) * 0.25);
-      c.push(v.x, v.y, v.z, r * k, g * k, b * k, Math.max(1.4, (6.4 - mag) * 1.35));
+      // light follows magnitude (each step 2.5×), tamed so Sirius doesn't swamp everything
+      const k = Math.min(4, 0.6 * 2.512 ** ((4.5 - mag) * 0.55));
+      pts.push([v.x, v.y, v.z, r * k, g * k, b * k, Math.min(15, 2.6 + Math.max(0, 6 - mag) * 1.6), f()]);
     }
-    // the catalogue stops at magnitude 5.5; fill in the faint naked-eye stars (to ~6.5) statistically,
-    // crowding toward the galactic plane as the real ones do
-    const f = rng(4);
-    for (let i = 0; i < 6000; i++) {
-      const plane = f() < 0.55;
-      const v = new Vector3(...galToEqj(...unit(f() * 360, plane ? gauss(f) * 12 : Math.asin(2 * f() - 1) / D))).multiplyScalar(R);
-      const [r, g, b] = starColor(3200 + f() ** 2 * 9000), k = 0.3 + f() * 0.3;
-      c.push(v.x, v.y, v.z, r * k, g * k, b * k, 1.2 + f() * 0.5);
+    // the catalogue stops at magnitude 5.5; fill in the faint naked-eye stars statistically, crowding
+    // toward the galactic plane as the real ones do
+    for (let i = 0; i < (MOBILE ? 8000 : 15000); i++) {
+      const plane = f() < 0.6;
+      const v = new Vector3(...galToEqj(...unit(f() * 360, plane ? gauss(f) * 10 : Math.asin(2 * f() - 1) / D))).multiplyScalar(R);
+      const [r, g, b] = starColor(3200 + f() ** 2 * 9000), k = 0.2 + f() ** 2 * 0.4;
+      pts.push([v.x, v.y, v.z, r * k, g * k, b * k, 1.4 + f() * 0.9, f()]);
     }
-    // the Milky Way: soft overlapping glows along the galactic plane, brighter and wider toward Sagittarius
-    const m = cloud(), rand = rng(9);
-    for (let i = 0; i < 9000; i++) {
-      const l = rand() * 360, lc = ((l + 180) % 360) - 180, toCenter = Math.exp(-((lc / 55) ** 2));
-      const bLat = gauss(rand) * (3 + 5 * toCenter);
+    // the Milky Way: tens of thousands of soft glows along the galactic plane, brightest in the star
+    // clouds toward Sagittarius, broken up by dark dust lanes and split by the Great Rift
+    const m: number[][] = [], rand = rng(9);
+    for (let i = 0; i < (MOBILE ? 20000 : 40000); i++) {
+      const l = rand() * 360, lc = ((l + 180) % 360) - 180, toCenter = Math.exp(-((lc / 50) ** 2));
+      const bLat = gauss(rand) * (2.6 + 5.5 * toCenter) + (lc > -60 && lc < 30 ? -1 : 0) * toCenter;
       const v = new Vector3(...galToEqj(...unit(l, bLat))).multiplyScalar(R * 1.01);
-      // the Great Rift: dust splitting the band lengthwise from Cygnus down to Sagittarius
-      const rift = 1 - 0.75 * Math.exp(-(((bLat - 0.6) / 1.5) ** 2)) * (lc > -25 && lc < 75 ? 1 : 0);
-      const k = (0.02 + 0.055 * toCenter) * (0.75 + rand() * 0.5) * rift;
-      // warmer, older stars toward the bulge
-      m.push(v.x, v.y, v.z, (0.78 + 0.2 * toCenter) * k, (0.82 + 0.05 * toCenter) * k, (1 - 0.2 * toCenter) * k, 20 + rand() * 18);
+      const rift = 1 - 0.8 * Math.exp(-(((bLat - 0.4) / 1.4) ** 2)) * (lc > -30 && lc < 80 ? 1 : 0);
+      const dust = 1 - 0.85 * ridged(l * 0.06, bLat * 0.18, 3.1) ** 3;          // dark lanes and globules
+      const clouds = 0.55 + 0.9 * noise(l * 0.035, bLat * 0.08, 7.7);           // bright star clouds
+      const k = (0.025 + 0.09 * toCenter) * rift * dust * clouds * (0.7 + rand() * 0.6);
+      m.push([v.x, v.y, v.z, (0.8 + 0.2 * toCenter) * k, (0.83 + 0.04 * toCenter) * k, (1 - 0.22 * toCenter) * k * 0.45, 12 + rand() * 14, 0]); // big, faint glows blend into a smooth band
     }
-    return [c.build(), m.build()];
+    return [starGeometry(pts), starGeometry(m), starMaterial(1), starMaterial(0)];
   }, []);
   const figures = useMemo(() => {
     const pts: Vector3[] = [];
@@ -249,7 +325,7 @@ function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef,
     Object.assign(m, { transparent: true, blending: AdditiveBlending }); // additive: alpha scales its light
     m.uniforms.fade = { value: 1 };
     m.fragmentShader = m.fragmentShader.replace('uniform float mieDirectionalG;', 'uniform float mieDirectionalG; uniform float fade;').replace('vec4( retColor, 1.0 )', 'vec4( retColor, fade )');
-    Object.assign(m.uniforms, { turbidity: { value: 1.8 }, rayleigh: { value: 3.6 }, mieCoefficient: { value: 0.0025 }, mieDirectionalG: { value: 0.8 } });
+    Object.assign(m.uniforms, { turbidity: { value: 2.4 }, rayleigh: { value: 1.6 }, mieCoefficient: { value: 0.004 }, mieDirectionalG: { value: 0.82 } });
     return a;
   }, []);
   const [hills, land] = useMemo(() => [horizonGeometry(), new MeshBasicMaterial({ color: '#03050a', side: DoubleSide, toneMapped: false })], []);
@@ -262,6 +338,7 @@ function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef,
 
   useFrame(({ scene }, dt) => {
     scene.background = black;
+    starMat.uniforms.uTime.value += dt;
     const simTime = nextSimTime(Math.min(dt, 0.1)); // the main scene is paused, so the clock runs here
     useStore.getState().set({ simTime });
     const date = new Date(simTime);
@@ -325,8 +402,8 @@ function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef,
       <mesh material={dome} renderOrder={-2}><sphereGeometry args={[R * 1.05, 48, 24]} /></mesh>
       <primitive object={atmo} renderOrder={-1} />
       <group ref={skyRef}>
-        <group userData={{ fadesByDay: true }}><PointCloud geometry={milky} /></group>
-        <group userData={{ fadesByDay: true }}><PointCloud geometry={stars} /></group>
+        <group userData={{ fadesByDay: true }}><points geometry={milky} material={milkyMat} frustumCulled={false} /></group>
+        <group userData={{ fadesByDay: true }}><points geometry={stars} material={starMat} frustumCulled={false} /></group>
         {lines && <primitive object={figures} />}
         <group userData={{ fadesByDay: true }}><PointCloud geometry={planets} /></group>
         <group ref={sun}>
@@ -337,6 +414,7 @@ function Sky({ lat, lon, lines, sats: satList, bodyDirs, satDirs, satUp, skyRef,
         <group ref={moon}><mesh material={moonMat}><sphereGeometry args={[1.4, 64, 32]} /></mesh></group>
       </group>
       <PointCloud geometry={sats} />
+      <ShootingStars night={night} />
       <mesh material={haze} renderOrder={5}><sphereGeometry args={[R * 0.92, 48, 24]} /></mesh>
       <mesh geometry={hills} material={land} />
       {/* ground hides everything below the horizon */}
