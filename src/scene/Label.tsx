@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import type { Group, Object3D } from 'three';
 import { useStore } from '../store.ts';
 import { fade } from '../lib/coords.ts';
 import { byId } from '../catalog.ts';
@@ -18,7 +19,7 @@ interface Props {
 
 /** Clickable DOM label pinned to a 3D point. Doubles as the hit target for tiny objects. */
 export function Label({ id, text, window, position, variant, shown }: Props) {
-  const el = useRef<HTMLButtonElement>(null!);
+  const el = useRef<HTMLButtonElement>(null!), anchor = useRef<Group>(null);
   const selected = useStore((s) => s.selected === id);
   // labels for layers you can't see aren't mounted, so they cost nothing per frame
   const on = useStore((s) => s.show.labels);
@@ -33,12 +34,15 @@ export function Label({ id, text, window, position, variant, shown }: Props) {
     // satellites (always beside Earth) skip the check: it would rerun their orbit math every frame.
     const obj = byId.get(id);
     if (o > 0 && obj && !obj.earthOrbit && variant !== 'here' && obj.pos(new Date(s.simTime)).distanceTo(s.focus) > 100 * 10 ** s.logD) o = 0;
+    // a label is HTML laid over the canvas, so it must hide itself when its 3D object is hidden (a planet the red giant swallowed)
+    for (let p: Object3D | null = anchor.current; p && o > 0; p = p.parent) if (!p.visible) o = 0;
     el.current.style.opacity = String(o);
     el.current.style.visibility = o < 0.25 ? 'hidden' : 'visible';
   });
   if (!live || !on) return null;
   return (
-    <Html position={position} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+    <group ref={anchor} position={position}>
+    <Html zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
       <button
         ref={el}
         className={`label ${variant ?? ''} ${selected ? 'selected' : ''}`}
@@ -49,5 +53,6 @@ export function Label({ id, text, window, position, variant, shown }: Props) {
         {text}
       </button>
     </Html>
+    </group>
   );
 }

@@ -12,6 +12,7 @@ import { MOBILE } from '../lib/device.ts';
 import { K, Space } from './Space.tsx';
 import { Label } from './Label.tsx';
 import { BlackHoles } from './BlackHole.tsx';
+import { Events } from './Events.tsx';
 import { EarthMoonLayer } from '../layers/EarthMoonLayer.tsx';
 import { InnerSolarLayer } from '../layers/InnerSolarLayer.tsx';
 import { OuterSolarLayer } from '../layers/OuterSolarLayer.tsx';
@@ -33,7 +34,8 @@ function YouAreHere() {
   const ref = useRef<Group>(null!);
   // just above the north pole, so it doesn't cover the globe up close (negligible offset when zoomed out)
   useFrame(() => ref.current.position.copy(get('earth').pos(simDate())).add(ABOVE_POLE).divideScalar(AU));
-  return <group ref={ref}><Label id="earth" text="You are here" window={ALWAYS} variant="here" /></group>;
+  // hidden while the merger time-lapse moves the Milky Way
+  return <group ref={ref}><Label id="earth" text="You are here" window={ALWAYS} variant="here" shown={() => useStore.getState().event?.id !== 'merger'} /></group>;
 }
 
 const idle = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 200 }) : setTimeout(f, 16));
@@ -146,6 +148,7 @@ export function Universe() {
           <Space unit={KPC}><LocalGroupLayer /></Space>
           <Space unit={MPC}><CosmicWebLayer /><AttractorLayer /><SuperclusterLayer /></Space>
           <BlackHoles />
+          <Events />
         </>
       )}
       {/* no MSAA: it multiplies the cost of every point/additive pixel; dpr 1.5 + bloom keep edges soft */}

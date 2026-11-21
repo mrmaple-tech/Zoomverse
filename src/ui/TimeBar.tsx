@@ -9,7 +9,7 @@ import { Pause, Play, Reverse } from './icons.tsx';
 function visit(i: number) {
   const m = MOMENTS[i];
   const s = useStore.getState();
-  s.set({ simTime: Date.parse(m.date), playing: false, tour: null, caption: { title: m.label, text: m.note } });
+  s.set({ simTime: Date.parse(m.date), playing: false, tour: null, event: null, caption: { title: m.label, text: m.note } });
   s.flyTo(m.focus, m.logD);
 }
 

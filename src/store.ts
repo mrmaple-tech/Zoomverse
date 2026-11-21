@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { Vector3 } from 'three';
 import { LAYERS } from './data/layers.ts';
 import { galDir } from './lib/coords.ts';
+import type { EventId } from './data/events.ts';
 
 export const SPEEDS = [
   { label: '1×', rate: 1 },
@@ -46,7 +47,9 @@ interface State {
   show: { labels: boolean; satellites: boolean; orbits: boolean };
 
   /** Guided tour step, or null when not touring. */
-  tour: number | null;
+  tour: { id: string; step: number } | null;
+  /** Running time-lapse: its progress t (0 now … 1 end) and whether it's playing. */
+  event: { id: EventId; t: number; playing: boolean } | null;
   /** Full-screen panel over the 3D scene (the scene pauses while one is open). */
   panel: 'sky' | 'sizes' | null;
   /** Short message shown above the time bar (tour stops, historic moments). */
@@ -98,6 +101,7 @@ export const useStore = create<State>()((set, get) => ({
   show: { labels: true, satellites: true, orbits: true },
 
   tour: null,
+  event: null,
   panel: null,
   caption: null,
   home: savedHome(),

@@ -4,6 +4,7 @@ import { GALAXIES, MILKY_WAY as MW, type Galaxy } from '../data/deepSky.ts';
 import { LAYERS, type Fade } from '../data/layers.ts';
 import { GAL_BASIS, galDir } from '../lib/coords.ts';
 import { Inspectable } from '../scene/Inspectable.tsx';
+import { useStore } from '../store.ts';
 import { Glow } from '../scene/Glow.tsx';
 import { Fader } from '../scene/Space.tsx';
 import { PointCloud } from '../scene/PointCloud.tsx';
@@ -28,7 +29,7 @@ const recipe = (g: Galaxy, seed: number, count: number, bright: number): CloudSt
   [{ gen: g.shape, opts: { radius: g.diameterKpc / 2, seed, count, bright, ...g.opts } }];
 
 /** Disk orientation as seen from Earth: tilted `incl` away from facing us, about an axis turned by `pa`. */
-function orient(g: Galaxy) {
+export function orient(g: Galaxy) {
   const toUs = galDir(g.l, g.b).negate();
   const axis = new Vector3().crossVectors(toUs, UP).normalize().applyAxisAngle(toUs, g.pa * D);
   return new Quaternion().setFromUnitVectors(Z, toUs.clone().applyAxisAngle(axis, g.incl * D));
@@ -55,18 +56,20 @@ const HOME: CloudStep[] = [{ gen: 'spiral', opts: { count: MW.diameterKpc * 220,
 export function LocalGroupLayer() {
   // A lighter Milky Way at the same point density as its neighbors (the full one fades out before here).
   const home = useCloud(HOME);
+  // during the merger time-lapse, its simulated Milky Way and Andromeda (with her satellites) stand in
+  const merging = useStore((s) => s.event?.id === 'merger');
   return (
     <>
       {/* takes over as the full Milky Way layer fades out, so the two never stack */}
-      <Fader window={LAYER.fade}>
+      {!merging && <Fader window={LAYER.fade}>
         <Fader window={[LAYERS[5].fade[2], LAYERS[5].fade[3], Infinity, Infinity]}>
           <group matrix={GAL_BASIS} matrixAutoUpdate={false}>
             {home && <PointCloud geometry={home} worldSize={MW.diameterKpc * POINT} />}
             <Glow size={MW.diameterKpc * 0.5} color="#ffd8a8" opacity={0.7} position={[MW.sunDistKpc, 0, 0]} />
           </group>
         </Fader>
-      </Fader>
-      {GALAXIES.map((g, i) => <GalaxyView key={g.id} g={g} seed={20 + i} />)}
+      </Fader>}
+      {GALAXIES.map((g, i) => (merging && (g.id === 'andromeda' || g.zone === 'm31') ? null : <GalaxyView key={g.id} g={g} seed={20 + i} />))}
     </>
   );
 }

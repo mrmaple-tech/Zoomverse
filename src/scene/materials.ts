@@ -271,13 +271,18 @@ export function glowTexture() {
 }
 
 /** A star's surface: temperature-colored granulation, with convection cells scaled to its size (huge on giants). */
-export function starSurface(tempK: number, radiusSun: number, color: (t: number) => [number, number, number]) {
+/** Granulation colors for a surface temperature: the dark lanes and the bright cells. */
+export function starTint(tempK: number, color: (t: number) => [number, number, number]) {
   // blackbody colors are pale; push the saturation up so a red giant reads red and a hot star blue
   const raw = color(tempK), top = Math.max(...raw), col = raw.map((v) => Math.max(0, top - (top - v) * 2.2));
   const mix = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t) as [number, number, number];
   // cool stars darken toward red in their granulation gaps; hot ones stay their own color
   const dark: [number, number, number] = tempK < 6500 ? [col[0], col[1] * 0.5, col[2] * 0.3] : mix(col, [0, 0, 0], 0.4);
-  const light = mix(col, [1, 1, 1], 0.12);
+  return { dark, light: mix(col, [1, 1, 1], 0.12) };
+}
+
+export function starSurface(tempK: number, radiusSun: number, color: (t: number) => [number, number, number]) {
+  const { dark, light } = starTint(tempK, color);
   return {
     material: sunMaterial(dark, light, 1 / (1 + 0.25 * Math.log2(Math.max(1, radiusSun)))),
     glow: `#${new Color(...light).getHexString()}`,

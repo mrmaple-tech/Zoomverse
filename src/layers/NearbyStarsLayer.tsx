@@ -49,6 +49,7 @@ function FocusedStar() {
   // also the host star while you're visiting one of its planets
   const id = useStore((s) => {
     const f = s.flight?.to ?? s.focusId;
+    if (s.event?.id === 'supernova') return null; // the time-lapse draws Betelgeuse itself
     return f?.startsWith('star-') ? f : visitedStar(f);
   });
   return id ? <StarBody key={id} id={id} /> : null;

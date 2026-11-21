@@ -6,6 +6,7 @@ import { Glow } from '../scene/Glow.tsx';
 import { Fader } from '../scene/Space.tsx';
 import { PointCloud } from '../scene/PointCloud.tsx';
 import { useCloud, type CloudStep } from '../scene/useCloud.ts';
+import { useStore } from '../store.ts';
 
 const LAYER = LAYERS[5];
 const DISK: CloudStep[] = [{ gen: 'spiral', opts: { count: MW.count, radius: MW.diameterKpc / 2, cx: MW.sunDistKpc, seed: 3, bright: 0.45 } }];
@@ -13,6 +14,8 @@ const DISK: CloudStep[] = [{ gen: 'spiral', opts: { count: MW.count, radius: MW.
 /** Galactic frame: the Sun at the origin, galactic center along +X, north galactic pole +Z. */
 export function MilkyWayLayer() {
   const geometry = useCloud(DISK);
+  const merging = useStore((s) => s.event?.id === 'merger'); // the time-lapse draws its own
+  if (merging) return null;
   return (
     <Fader window={LAYER.fade}>
       <group matrix={GAL_BASIS} matrixAutoUpdate={false}>

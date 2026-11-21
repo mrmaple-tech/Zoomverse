@@ -5,6 +5,9 @@ import { LAYERS, layerAt } from '../data/layers.ts';
 import { scaleBar } from '../lib/scale.ts';
 import { Search as SearchIcon } from './icons.tsx';
 import { startTour } from './Caption.tsx';
+import { TOURS } from '../data/tour.ts';
+import { EVENTS } from '../data/events.ts';
+import { startEvent } from '../scene/Events.tsx';
 import { Legal, showLegal } from './Legal.tsx';
 import { SATELLITES } from '../data/satellites.ts';
 
@@ -109,6 +112,33 @@ function Search() {
   );
 }
 
+/** The Tours menu: guided tours, and time-lapses of what's to come. */
+function Tours() {
+  const ref = useRef<HTMLDetailsElement>(null);
+  // close on any click outside, like a native menu
+  useEffect(() => {
+    const away = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) ref.current?.removeAttribute('open'); };
+    addEventListener('pointerdown', away);
+    return () => removeEventListener('pointerdown', away);
+  }, []);
+  const run = (f: () => void) => () => { ref.current?.removeAttribute('open'); f(); };
+  return (
+    <details className="tours" ref={ref}>
+      <summary>Tours</summary>
+      <div className="tours-menu glass">
+        <p className="menu-head">Guided tours</p>
+        {TOURS.map((t) => (
+          <button key={t.id} onClick={run(() => startTour(t.id))}><span className="name">{t.name}</span><span className="type">{t.blurb}</span></button>
+        ))}
+        <p className="menu-head">Time-lapses</p>
+        {EVENTS.map((e) => (
+          <button key={e.id} onClick={run(() => startEvent(e.id))}><span className="name">{e.name}</span><span className="type">{e.blurb}</span></button>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function ScaleBar() {
   const logD = useStore((s) => Math.round(s.logD * 100) / 100);
   const { label, px } = scaleBar((2 * 10 ** logD * Math.tan(FOV / 2)) / innerHeight);
@@ -175,7 +205,7 @@ function Links() {
   const set = useStore((s) => s.set);
   return (
     <nav className="nav-links" aria-label="Explore">
-      <button onClick={startTour}>Tour</button>
+      <Tours />
       <button onClick={() => set({ panel: 'sky', tour: null })}>Sky</button>
       <button onClick={() => set({ panel: 'sizes', tour: null })}>Sizes</button>
     </nav>

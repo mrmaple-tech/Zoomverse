@@ -395,7 +395,7 @@ function Marker({ id, window, near }: { id: string; window: Fade; near: number }
     ref.current.position.copy(get(id).pos(new Date(0))).sub(s.focus).multiplyScalar(K / 10 ** s.logD);
   });
   // out of the way once the hole itself fills the view
-  return <group ref={ref}><Label id={id} text={id === SGR_A.id ? 'Black hole' : get(id).name} variant="marker" window={window} shown={() => useStore.getState().logD > near} /></group>;
+  return <group ref={ref}><Label id={id} text={id === SGR_A.id ? 'Black hole' : get(id).name} variant="marker" window={window} shown={() => useStore.getState().logD > near && !useStore.getState().event} /></group>;
 }
 
 /** Visited black hole: the one you're at or flying to (Sagittarius A* is always there). */

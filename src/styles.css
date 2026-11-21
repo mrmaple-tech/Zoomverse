@@ -290,6 +290,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   .rail button:not([aria-current])::after { content: attr(data-n); font-size: 12px; }
   .scalebar { bottom: 236px; }
   .card { top: auto; left: var(--gap); right: var(--gap); width: auto; bottom: 186px; max-height: 50vh; }
+  .tours { position: static; }
+  .tours-menu { left: var(--gap); right: var(--gap); width: auto; max-width: none; top: 46px; }
   .caption { bottom: 226px; }
   .sz-controls { bottom: 184px; }
   .timebar { flex-wrap: wrap; justify-content: center; left: var(--gap); right: var(--gap); transform: none; border-radius: var(--r-l); }
@@ -325,6 +327,24 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
 .sky-time { margin-top: 12px; width: max-content; }
+
+/* ---------- Tours menu ---------- */
+.tours { position: relative; }
+.tours summary { list-style: none; display: flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; color: var(--muted); border-radius: var(--pill); cursor: pointer; transition: color 200ms var(--ease); }
+.tours summary::-webkit-details-marker { display: none; }
+.tours summary:hover, .tours[open] summary { color: var(--text); }
+.tours-menu {
+  position: absolute; left: 0; top: 46px; z-index: 60; width: 300px; max-width: calc(100vw - 2 * var(--gap)); padding: 6px; display: grid; gap: 2px;
+  background: var(--material-strong); border-radius: var(--r-m); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); animation: drop 160ms var(--ease);
+}
+.tours-menu .menu-head { margin: 8px 12px 4px; font-size: 12px; font-weight: 600; color: var(--warm); }
+.tours-menu button { display: flex; flex-direction: column; gap: 1px; padding: 8px 12px; border-radius: 10px; text-align: left; transition: background 150ms var(--ease); }
+.tours-menu button:hover { background: var(--fill-hover); }
+.tours-menu .name { font-size: 14px; color: var(--text); }
+.tours-menu .type { font-size: 12px; color: var(--muted); }
+/* time-lapse controls */
+.caption.event .scrub { gap: 14px; }
+.caption.event input[type='range'] { flex: 1; max-width: 360px; accent-color: var(--blue); }
 
 /* ---------- Map filters ---------- */
 .filters { position: relative; }
