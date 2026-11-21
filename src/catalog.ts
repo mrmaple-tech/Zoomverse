@@ -161,7 +161,8 @@ export const CATALOG: CatalogObject[] = [
     const p = g ? galDir(g.l, g.b).multiplyScalar(g.distKpc * KPC) : radecDir(h.ra!, h.dec!).multiplyScalar(h.distPc! * PC);
     // arrive 7° above the disk, like Sagittarius A*, so its far side shows arched over the shadow
     return {
-      id: h.id, name: h.name, type: h.type, fact: h.fact, host: h.host, size: `Event horizon ${formatSize(rs).replace(' across', '')} across`,
+      id: h.id, name: h.name, type: h.type, host: h.host,
+      fact: h.companion ? `${h.fact} Zoom out to see its companion star.` : h.fact, size: `Event horizon ${formatSize(rs).replace(' across', '')} across`,
       viewDir: new Vector3(0, Math.sin(0.12), Math.cos(0.12)), viewLogD: Math.log10(rs * 26), minLogD: Math.log10(rs * 6), pos: () => p,
     };
   }),

@@ -6,10 +6,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import {
-  BackSide, CubeCamera, HalfFloatType, Matrix4, ShaderMaterial, Vector2, Vector3,
-  WebGLCubeRenderTarget, WebGLRenderTarget, type Group, type Mesh, type Points,
+  AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CubeCamera, DoubleSide, Float32BufferAttribute, HalfFloatType,
+  Matrix4, ShaderMaterial, Vector2, Vector3, WebGLCubeRenderTarget, WebGLRenderTarget, type Group, type Mesh, type Points,
 } from 'three';
-import { BLACK_HOLES, GALAXIES, SGR_A, horizonM } from '../data/deepSky.ts';
+import { BLACK_HOLES, GALAXIES, SGR_A, horizonM, type BlackHoleInfo } from '../data/deepSky.ts';
 import type { Fade } from '../data/layers.ts';
 import { get } from '../catalog.ts';
 import { KPC, galDir, gauss, rng } from '../lib/coords.ts';
@@ -17,7 +17,8 @@ import { MAX_STEPS, STEP } from '../lib/geodesic.ts';
 import { starColor } from '../lib/stars.ts';
 import { useStore } from '../store.ts';
 import { Label } from './Label.tsx';
-import { pointsMaterial } from './materials.ts';
+import { pointsMaterial, starSurface } from './materials.ts';
+import { Glow } from './Glow.tsx';
 import { cloud } from './PointCloud.tsx';
 import { K } from './Space.tsx';
 
@@ -33,7 +34,7 @@ const material = () => new ShaderMaterial({
   transparent: true, depthTest: false, depthWrite: false, side: BackSide,
   uniforms: {
     uScene: { value: null }, uSky: { value: null }, uProj: { value: new Matrix4() },
-    uCam: { value: new Vector3() }, uCenter: { value: new Vector3() }, uRs: { value: 1 }, uTime: { value: 0 }, uOpacity: { value: 1 }, uDisk: { value: 1 },
+    uCam: { value: new Vector3() }, uCenter: { value: new Vector3() }, uRs: { value: 1 }, uTime: { value: 0 }, uOpacity: { value: 1 }, uDisk: { value: 1 }, uTemp: { value: 4300 }, uRout: { value: 13 },
   },
   vertexShader: /* glsl */ `
     varying vec3 vW;
@@ -44,10 +45,10 @@ const material = () => new ShaderMaterial({
   // Rays are traced with the hole at the origin and lengths in horizon radii; the disk lies in the XZ plane.
   fragmentShader: /* glsl */ `
     uniform sampler2D uScene; uniform samplerCube uSky; uniform mat4 uProj;
-    uniform vec3 uCam, uCenter; uniform float uRs, uTime, uOpacity, uDisk;
+    uniform vec3 uCam, uCenter; uniform float uRs, uTime, uOpacity, uDisk, uTemp, uRout;
     varying vec3 vW;
     const float LENS = ${f(LENS)}, STEP = ${f(STEP)}, SKY_R = ${f(SKY_R)};
-    const float R_IN = 3.0, R_OUT = 13.0;   // innermost stable orbit, and where the disk thins out
+    const float R_IN = 3.0;   // innermost stable orbit; the disk thins out by uRout
     const float SPIN = 1.3, CYCLE = 12.0;
 
     float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -60,7 +61,7 @@ const material = () => new ShaderMaterial({
     // Streaks of gas. Inner orbits are faster, which would wind any pattern ever tighter, so two copies
     // each shear for one cycle and cross-fade into a fresh one.
     float gas(float r, float phi) {
-      float w = SPIN * pow(r, -1.5), w0 = SPIN * pow(R_OUT, -1.5), n = 0.0;
+      float w = SPIN * pow(r, -1.5), w0 = SPIN * pow(uRout, -1.5), n = 0.0;
       for (int k = 0; k < 2; k++) {
         float c = uTime / CYCLE + 0.5 * float(k), ph = fract(c);
         float a = fract((phi - w0 * uTime - (w - w0) * (ph - 0.5) * CYCLE) / 6.28318);
@@ -81,7 +82,7 @@ const material = () => new ShaderMaterial({
     // Light from the disk where a ray (travelling along v, away from the camera) crosses it at x.
     vec4 disk(vec3 x, vec3 v, float shift) {
       float r = length(x.xz);
-      if (r <= R_IN || r >= R_OUT) return vec4(0.0);
+      if (r <= R_IN || r >= uRout) return vec4(0.0);
       // thin-disk brightness profile: zero at the inner edge, peaking just outside it (normalized to 1)
       float flux = 476.0 * (1.0 - sqrt(R_IN / r)) / (r * r * r);
       // gas on circular orbits, at the speed an observer hovering there would measure: half the speed of light at the inner edge
@@ -91,10 +92,13 @@ const material = () => new ShaderMaterial({
       // how much the light's frequency is shifted on the way to us: Doppler (the side coming toward us
       // is bluer and far brighter) times the climb out of the gravity well
       float g = shift * sqrt(1.0 - 1.5 / r) / (1.0 - beta * dot(et, k));
-      float n = gas(r, atan(x.z, x.x));
-      vec3 col = blackbody(4300.0 * pow(flux, 0.25) * g) * flux * g * g * g * g * (0.5 + 3.2 * n * n);
-      float a = smoothstep(R_IN, R_IN + 0.5, r) * smoothstep(R_OUT, R_OUT - 5.0, r) * (0.55 + 0.45 * n);
-      return vec4(col * 1.5 * a, a);
+      float phi = atan(x.z, x.x), n = gas(r, phi);
+      // a hot spot riding the inner disk, like the flares seen circling Sagittarius A*
+      float rh = R_IN + 1.6, ph = mod(SPIN * pow(rh, -1.5) * uTime, 6.28318);
+      n += 1.4 * exp(-(r * r + rh * rh - 2.0 * r * rh * cos(phi - ph)) / 0.5);
+      vec3 col = blackbody(uTemp * pow(flux, 0.25) * g) * flux * g * g * g * g * (0.5 + 3.2 * n * n);
+      float a = smoothstep(R_IN, R_IN + 0.5, r) * smoothstep(uRout, uRout - 5.0, r) * (0.55 + 0.45 * n) * min(uDisk, 1.0);
+      return vec4(col * 1.5 * a * max(uDisk, 1.0), a);
     }
     // The real scene in the direction a ray leaves along. On screen that is this frame's own picture;
     // rays bent off the edge of the screen (or back past the camera) use the all-around capture.
@@ -133,7 +137,12 @@ const material = () => new ShaderMaterial({
           float dt = STEP * sqrt(r2);
           v += a * (dt * 0.5);
           vec3 q = p + v * dt;
-          if (uDisk > 0.5 && p.y * q.y < 0.0 && lit.a < 0.995) lit += (1.0 - lit.a) * disk(mix(p, q, p.y / (p.y - q.y)), v, 1.0 / well);
+          if (uDisk > 0.0 && p.y * q.y < 0.0 && lit.a < 0.995) lit += (1.0 - lit.a) * disk(mix(p, q, p.y / (p.y - q.y)), v, 1.0 / well);
+          // hot, thin gas puffed above and below the disk: a soft glow the rays pass through
+          if (uDisk > 0.0) {
+            float rr = length(p.xz), hz = exp(-abs(p.y) / (0.35 + 0.12 * rr)) * smoothstep(2.0, R_IN + 1.0, rr) * smoothstep(uRout * 1.4, uRout * 0.4, rr) / (rr * rr);
+            lit.rgb += (1.0 - lit.a) * blackbody(uTemp * 0.9) * hz * uDisk * dt * 1.6;
+          }
           p = q;
           a = -1.5 * h2 * p / pow(dot(p, p), 2.5);
           v += a * (dt * 0.5);
@@ -147,57 +156,179 @@ const material = () => new ShaderMaterial({
     }`,
 });
 
-/** The packed sky of the galaxy's core: old orange giants everywhere, a few young blue stars, thicker along the disk. */
-function coreSky() {
-  const c = cloud(), r = rng(11);
-  for (let i = 0; i < 9000; i++) {
-    const dir = r() < 0.45 ? galDir(r() * 360, gauss(r) * 9) : new Vector3(gauss(r), gauss(r), gauss(r)).normalize();
-    const [cr, cg, cb] = starColor(r() < 0.12 ? 9000 + r() * 16000 : 3200 + r() * 2200);
-    const k = 0.15 + r() ** 3 * 0.75;
+/**
+ * The packed sky around the hole: a galactic core (old orange giants, a few young blue stars, thicker
+ * along the disk) or a globular cluster (old yellow stars on every side, a sprinkling of blue stragglers).
+ */
+function crowdedSky(kind: 'core' | 'globular') {
+  const c = cloud(), r = rng(kind === 'core' ? 11 : 12), n = kind === 'core' ? 9000 : 14000;
+  for (let i = 0; i < n; i++) {
+    const dir = kind === 'core' && r() < 0.45 ? galDir(r() * 360, gauss(r) * 9) : new Vector3(gauss(r), gauss(r), gauss(r)).normalize();
+    const hot = r() < (kind === 'core' ? 0.12 : 0.03);
+    const [cr, cg, cb] = starColor(hot ? 9000 + r() * 16000 : kind === 'core' ? 3200 + r() * 2200 : 4200 + r() * 1800);
+    const k = (0.15 + r() ** 3 * 0.75) * (kind === 'core' ? 1 : 1.2);
     dir.multiplyScalar(SKY_R - 30 + r() * 60);
     c.push(dir.x, dir.y, dir.z, cr * k, cg * k, cb * k, 1.6 + r() ** 3 * 3);
   }
   return c.build();
 }
 
+/**
+ * Twin relativistic jets along the spin axis (the disk's normal, +y), in horizon radii: widening as they
+ * go, brightest along their edges (as M87's is), with knots streaming outward. The jet aimed our way is
+ * boosted; the counter-jet is faint. Being ordinary scene objects, they get lensed with everything else.
+ */
+const JET_LEN = 2e5;
+function jetGeometry() {
+  const rings = 64, seg = 28, pos: number[] = [], nrm: number[] = [], along: number[] = [], idx: number[] = [];
+  for (let i = 0; i <= rings; i++) {
+    const t = i / rings, y = 2.5 * (JET_LEN / 2.5) ** t, w = 0.25 + 0.22 * y ** 0.62; // log-spaced rings, parabolic widening
+    for (let j = 0; j <= seg; j++) {
+      const a = (j / seg) * Math.PI * 2, cx = Math.cos(a), cz = Math.sin(a);
+      pos.push(cx * w, y, cz * w); nrm.push(cx, 0, cz); along.push(t);
+    }
+  }
+  for (let i = 0; i < rings; i++) for (let j = 0; j < seg; j++) {
+    const a = i * (seg + 1) + j, b = a + seg + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new Float32BufferAttribute(nrm, 3));
+  g.setAttribute('aAlong', new Float32BufferAttribute(along, 1));
+  g.setIndex(idx);
+  return g;
+}
+const jetMaterial = (strength: number, time: { value: number }) => new ShaderMaterial({
+  transparent: true, depthWrite: false, blending: AdditiveBlending, side: DoubleSide,
+  uniforms: { uTime: time, uStrength: { value: strength }, uOpacity: { value: 1 } },
+  vertexShader: /* glsl */ `
+    attribute float aAlong; varying float vT; varying vec3 vN; varying vec3 vW;
+    void main() {
+      vT = aAlong; vN = normalize(mat3(modelMatrix) * normal);
+      vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform float uTime, uStrength, uOpacity; varying float vT; varying vec3 vN; varying vec3 vW;
+    void main() {
+      float edge = 1.0 - abs(dot(normalize(vN), normalize(cameraPosition - vW)));
+      float limb = 0.25 + 0.75 * edge * edge;                       // limb-brightened, like a hollow sheath
+      float knots = 0.55 + 0.45 * sin(vT * 70.0 - uTime * 2.5);      // blobs flowing outward
+      float fall = pow(1.0 - vT, 2.2) * smoothstep(0.0, 0.03, vT);
+      vec3 col = mix(vec3(0.45, 0.62, 1.0), vec3(0.9, 0.95, 1.0), pow(1.0 - vT, 8.0)); // white-hot at the base
+      gl_FragColor = vec4(col * 2.4, limb * knots * fall * uStrength * uOpacity);
+    }`,
+});
+
+/** Gas pulled off the companion at the point between the two, trailing as it spirals down to the disk's rim. */
+const streamMaterial = (time: { value: number }) => new ShaderMaterial({
+  transparent: true, depthWrite: false, blending: AdditiveBlending,
+  uniforms: { uTime: time, uTheta: { value: 0 }, uD: { value: 1 }, uRout: { value: 10 }, uOpacity: { value: 1 }, uPx: { value: Math.min(devicePixelRatio, 2) } },
+  vertexShader: /* glsl */ `
+    attribute float aS; attribute vec2 aJit; uniform float uTime, uTheta, uD, uRout, uPx; varying float vA; varying float vS;
+    void main() {
+      float s = fract(aS + uTime * 0.06);                  // flowing inward, endlessly
+      float r = uRout + (uD - uRout) * pow(1.0 - s, 1.6);  // spread along the whole fall, not bunched at the hole
+      float a = uTheta - s * 1.4;                          // left behind as the star moves on
+      vec3 p = vec3(cos(a) * r, 0.0, sin(a) * r) + vec3(aJit.x, aJit.y * 0.4, aJit.x * 0.6) * r * 0.03;
+      vS = s; vA = smoothstep(0.0, 0.05, s) * (1.0 - smoothstep(0.85, 1.0, s));
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      gl_PointSize = (2.5 + 2.0 * s) * uPx;
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform float uOpacity; varying float vA; varying float vS;
+    void main() {
+      float r = length(gl_PointCoord - 0.5) * 2.0;
+      vec3 col = mix(vec3(1.0, 0.55, 0.3), vec3(0.85, 0.9, 1.0), vS); // heating up as it falls
+      gl_FragColor = vec4(col * 1.3, vA * (1.0 - r * r) * 0.85 * uOpacity);
+    }`,
+});
+function streamGeometry() {
+  const r = rng(5), n = 2500, s = new Float32Array(n), jit = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) { s[i] = r(); jit[i * 2] = gauss(r); jit[i * 2 + 1] = gauss(r); }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(new Float32Array(n * 3), 3)); // placed in the shader
+  g.setAttribute('aS', new BufferAttribute(s, 1));
+  g.setAttribute('aJit', new BufferAttribute(jit, 2));
+  return g;
+}
+
 interface Props {
   id: string;
   /** Event-horizon radius, meters. */
   rs: number;
-  disk?: boolean;
-  /** The packed stars of a galactic core all around (Sagittarius A*). */
-  coreSky?: boolean;
+  info?: BlackHoleInfo;
+  /** The packed stars all around (Sagittarius A*'s galactic core, Omega Centauri's cluster). */
+  crowd?: 'core' | 'globular';
 }
 
+const SUN_R = 6.957e8, AU_M = 1.495978707e11;
+
 /** One ray-traced black hole. Costly (it re-renders the scene behind it), so others mount only while visited. */
-export function BlackHole({ id, rs: RS, disk = true, coreSky: crowded = false }: Props) {
-  const mesh = useRef<Mesh>(null!), stars = useRef<Points>(null!);
+export function BlackHole({ id, rs: RS, info, crowd }: Props) {
+  const mesh = useRef<Mesh>(null!), stars = useRef<Points>(null!), jets = useRef<Group>(null!);
+  const star = useRef<Group>(null!), stream = useRef<Points>(null!);
+  const disk = info ? info.disk : 1, comp = info?.companion;
   const g = useMemo(() => {
     // drawn like every other shader here; the tone mapping lines make it match drei's <Stars> when it is re-photographed below
     const skyMat = pointsMaterial(0);
     skyMat.fragmentShader = skyMat.fragmentShader.replace(/\}\s*$/, '#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}');
     const cube = new WebGLCubeRenderTarget(512, { type: HalfFloatType });
+    const mat = material();
+    const look = comp ? starSurface(comp.tempK, comp.radiusSun, starColor) : null;
     return {
-      mat: material(), skyMat, skyGeo: coreSky(), cube, cubeCam: new CubeCamera(1, 2000, cube),
+      mat, skyMat, skyGeo: crowd ? crowdedSky(crowd) : null, cube, cubeCam: new CubeCamera(1, 2000, cube),
       shot: new WebGLRenderTarget(1, 1, { type: HalfFloatType }),
       center: new Vector3(), size: new Vector2(), frame: 0,
+      jetGeo: info?.jet ? jetGeometry() : null,
+      jetMat: info?.jet ? jetMaterial(info.jet, mat.uniforms.uTime) : null,
+      counterMat: info?.jet ? jetMaterial(info.jet * 0.2, mat.uniforms.uTime) : null,
+      starMat: look?.material ?? null,
+      starColor: look?.glow ?? '#fff',
+      streamGeo: comp?.stream ? streamGeometry() : null,
+      streamMat: comp?.stream ? streamMaterial(mat.uniforms.uTime) : null,
     };
-  }, []);
-  useEffect(() => () => { g.shot.dispose(); g.cube.dispose(); g.mat.dispose(); g.skyMat.dispose(); g.skyGeo.dispose(); }, [g]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => {
+    g.shot.dispose(); g.cube.dispose(); g.mat.dispose(); g.skyMat.dispose(); g.skyGeo?.dispose();
+    g.jetGeo?.dispose(); g.jetMat?.dispose(); g.counterMat?.dispose(); g.starMat?.dispose(); g.streamGeo?.dispose(); g.streamMat?.dispose();
+  }, [g]);
 
   useFrame(({ gl, scene, camera }, dt) => {
     const s = useStore.getState(), k = K / 10 ** s.logD, u = g.mat.uniforms;
     const pos = get(id).pos(new Date(0));
     g.center.copy(pos).sub(s.focus).multiplyScalar(k);
-    u.uDisk.value = disk ? 1 : 0;
+    const rs = RS * k;
+    u.uDisk.value = disk;
+    u.uTemp.value = info?.temp ?? 4300;
+    u.uRout.value = info?.rOut ?? 13;
+    if (s.playing && !reducedMotion) u.uTime.value += Math.min(dt, 0.1);
 
-    // the crowded sky only exists within a few light-years of the center
-    const near = crowded ? 1 - smooth(16, 17, Math.log10(pos.distanceTo(s.focus) + 10 ** s.logD)) : 0;
+    if (jets.current) { jets.current.position.copy(g.center); jets.current.scale.setScalar(rs); }
+    if (comp && star.current) {
+      // the companion on its orbit (in the disk's plane, which its gas feeds), moving with simulation time
+      const th = (2 * Math.PI * s.simTime) / (comp.periodDays * 864e5), d = comp.distAU * AU_M * k;
+      star.current.position.set(g.center.x + Math.cos(th) * d, g.center.y, g.center.z + Math.sin(th) * d);
+      star.current.scale.setScalar(comp.radiusSun * SUN_R * k);
+      if (stream.current && g.streamMat) {
+        stream.current.position.copy(g.center);
+        stream.current.scale.setScalar(rs);
+        const su = g.streamMat.uniforms;
+        su.uTheta.value = th;
+        su.uD.value = (comp.distAU * AU_M - comp.radiusSun * SUN_R) / RS; // from the near side of the star
+        su.uRout.value = (info?.rOut ?? 13) * 0.9;
+      }
+    }
+
+    // the crowded sky only exists close in (a few light-years at a galaxy's core, the cluster's core here)
+    const lim = crowd === 'globular' ? 17.3 : 16;
+    const near = crowd ? 1 - smooth(lim, lim + 1, Math.log10(pos.distanceTo(s.focus) + 10 ** s.logD)) : 0;
     g.skyMat.uniforms.uOpacity.value = near;
-    stars.current.visible = near > 0.003;
+    if (stars.current) stars.current.visible = near > 0.003;
 
     // skip the whole thing until the lens is more than a few pixels across
-    const rs = RS * k, o = smooth(0.004, 0.012, (LENS * rs) / camera.position.distanceTo(g.center));
+    const o = smooth(0.004, 0.012, (LENS * rs) / camera.position.distanceTo(g.center));
     mesh.current.visible = o > 0;
     if (!o) return;
     mesh.current.position.copy(g.center);
@@ -207,7 +338,6 @@ export function BlackHole({ id, rs: RS, disk = true, coreSky: crowded = false }:
     u.uCenter.value.copy(g.center);
     u.uCam.value.copy(camera.position).sub(g.center).divideScalar(rs);
     u.uProj.value = camera.projectionMatrix;
-    if (s.playing && !reducedMotion) u.uTime.value += Math.min(dt, 0.1);
 
     // Photograph the scene without the hole: once through the camera (every frame), and now and then
     // in all six directions from the hole for light that arrives from off screen.
@@ -227,9 +357,27 @@ export function BlackHole({ id, rs: RS, disk = true, coreSky: crowded = false }:
     u.uSky.value = g.cube.texture;
   });
 
+  // the companion's label shows once you've zoomed out far enough to see the pair
+  const compWin: Fade | null = comp ? [Math.log10(comp.distAU * AU_M * 0.3), Math.log10(comp.distAU * AU_M * 0.8), Math.log10(comp.distAU * AU_M * 40), Math.log10(comp.distAU * AU_M * 80)] : null;
   return (
     <>
-      <points ref={stars} geometry={g.skyGeo} material={g.skyMat} visible={false} />
+      {g.skyGeo && <points ref={stars} geometry={g.skyGeo} material={g.skyMat} visible={false} />}
+      {g.jetGeo && (
+        <group ref={jets}>
+          <mesh geometry={g.jetGeo} material={g.jetMat!} />
+          <mesh geometry={g.jetGeo} material={g.counterMat!} scale={[1, -1, 1]} />
+        </group>
+      )}
+      {comp && (
+        <group ref={star}>
+          <mesh material={g.starMat!}><sphereGeometry args={[1, 96, 48]} /></mesh>
+          <Glow size={5} color={g.starColor} opacity={0.8} />
+          <Glow size={10} color={g.starColor} opacity={0.2} />
+          <Label id={id} text={comp.name} window={compWin!} variant="faint" />
+        </group>
+      )}
+      {/* placed in the shader, so three.js can't know its bounds: never cull it */}
+      {g.streamGeo && <points ref={stream} geometry={g.streamGeo} material={g.streamMat!} frustumCulled={false} />}
       <mesh ref={mesh} material={g.mat} visible={false} renderOrder={10}>
         <icosahedronGeometry args={[1, 3]} />
       </mesh>
@@ -254,13 +402,13 @@ function Visited() {
     const f = s.flight?.to ?? s.focusId;
     return BLACK_HOLES.find((h) => h.id === f) ?? null;
   });
-  return at ? <BlackHole key={at.id} id={at.id} rs={horizonM(at.solarMasses)} disk={at.disk} /> : null;
+  return at ? <BlackHole key={at.id} id={at.id} rs={horizonM(at.solarMasses)} info={at} crowd={at.sky} /> : null;
 }
 
 export function BlackHoles() {
   return (
     <>
-      <BlackHole id={SGR_A.id} rs={SGR_A.horizonKm * 1e3} coreSky />
+      <BlackHole id={SGR_A.id} rs={SGR_A.horizonKm * 1e3} crowd="core" />
       <Visited />
       {/* marked from the edge of the galaxy inward */}
       <Marker id={SGR_A.id} window={[12.4, 13, 21.6, 22.2]} near={12.4} />
@@ -268,7 +416,7 @@ export function BlackHoles() {
         const rs = horizonM(h.solarMasses), host = GALAXIES.find((x) => x.id === h.host);
         // galaxy holes show while you look at their galaxy, stellar ones around the nearby-stars scale,
         // TON 618 out on the cosmic web
-        const top = host ? Math.log10(host.diameterKpc * KPC * 1.5) : h.id === 'ton-618' ? 26 : 18;
+        const top = host ? Math.log10(host.diameterKpc * KPC * 1.5) : h.markTo ?? 18;
         return <Marker key={h.id} id={h.id} window={[Math.log10(rs * 40), Math.log10(rs * 80), top, top + 0.5]} near={Math.log10(rs * 30)} />;
       })}
     </>

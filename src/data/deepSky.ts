@@ -255,28 +255,73 @@ type Vec3 = { x: number; y: number; z: number };
  * Black holes you can fly up to. Galaxy-centered ones sit at their host galaxy's position; the others
  * have their own (RA hours, Dec degrees, distance in pc). Event-horizon radius = 2.95 km per solar mass.
  */
+export interface Companion {
+  name: string;
+  /** Star radius (Suns), orbit radius (AU), period (days), surface temperature (K). */
+  radiusSun: number; distAU: number; periodDays: number; tempK: number;
+  /** A stream of gas pulled off the star into the black hole's disk. */
+  stream?: boolean;
+}
 export interface BlackHoleInfo {
   id: string; name: string; type: string; solarMasses: number;
   host?: string; ra?: number; dec?: number; distPc?: number;
-  /** Dormant black holes have no glowing disk: just the bent light around the shadow. */
-  disk: boolean;
+  /** Disk brightness: 0 = dormant (just the bent light around the shadow), 1 = typical, above 1 = quasar. */
+  disk: number;
+  /** Disk temperature scale (K at the brightest ring; small holes' disks are far hotter), outer radius (rs). */
+  temp?: number; rOut?: number;
+  /** Relativistic jets along the spin axis (relative strength). */
+  jet?: number;
+  companion?: Companion;
+  /** Crowded surroundings: a globular cluster's packed stars all around. */
+  sky?: 'globular';
+  /** Marked out to this zoom (log10 m) when not set by a host galaxy. */
+  markTo?: number;
   fact: string;
 }
 export const BLACK_HOLES: BlackHoleInfo[] = [
-  { id: 'm87-bh', name: 'M87* (black hole)', type: 'Supermassive black hole', solarMasses: 6.5e9, host: 'm87', disk: true,
-    fact: 'The first black hole ever photographed, by the Event Horizon Telescope in 2019. At 6.5 billion times the Sun\'s mass, its event horizon is wider than the orbit of Neptune.' },
-  { id: 'm31-bh', name: 'M31* (Andromeda\'s black hole)', type: 'Supermassive black hole', solarMasses: 1.4e8, host: 'andromeda', disk: true,
+  { id: 'm87-bh', name: 'M87* (black hole)', type: 'Supermassive black hole', solarMasses: 6.5e9, host: 'm87', disk: 1, temp: 5000, rOut: 16, jet: 1,
+    fact: 'The first black hole ever photographed, by the Event Horizon Telescope in 2019. At 6.5 billion times the Sun\'s mass, its event horizon is wider than the orbit of Neptune, and its jet stretches 5,000 light-years.' },
+  { id: 'm31-bh', name: 'M31* (Andromeda\'s black hole)', type: 'Supermassive black hole', solarMasses: 1.4e8, host: 'andromeda', disk: 0.5, temp: 3800,
     fact: 'About 140 million Suns, some 30 times heavier than the Milky Way\'s, surrounded by an unusual disk of young blue stars.' },
-  { id: 'cen-a-bh', name: 'Centaurus A* (black hole)', type: 'Supermassive black hole', solarMasses: 5.5e7, host: 'centaurus-a', disk: true,
+  { id: 'cen-a-bh', name: 'Centaurus A* (black hole)', type: 'Supermassive black hole', solarMasses: 5.5e7, host: 'centaurus-a', disk: 1, temp: 4500, jet: 0.9,
     fact: 'About 55 million Suns. It feeds on gas from a swallowed galaxy and blasts out jets a million light-years long; the Event Horizon Telescope imaged their base in 2021.' },
-  { id: 'ton-618', name: 'TON 618', type: 'Ultramassive black hole (quasar)', solarMasses: 6.6e10, ra: 12.4736, dec: 31.4772, distPc: 5.6e9, disk: true,
+  { id: 'm81-bh', name: 'M81* (black hole)', type: 'Supermassive black hole', solarMasses: 7e7, host: 'bodes', disk: 0.6, temp: 4000,
+    fact: 'About 70 million Suns, feeding slowly: the nearest bright example of a dimly active galactic nucleus, flickering in X-rays and radio.' },
+  { id: 'm106-bh', name: 'M106* (black hole)', type: 'Supermassive black hole', solarMasses: 3.9e7, host: 'm106', disk: 0.8, temp: 4500, jet: 0.5,
+    fact: 'Weighed with rare precision (39 million Suns) by tracking clumps of water vapor, natural microwave lasers called masers, orbiting in its disk.' },
+  { id: 'sombrero-bh', name: 'Sombrero* (black hole)', type: 'Supermassive black hole', solarMasses: 1e9, host: 'sombrero', disk: 0.35, temp: 3500,
+    fact: 'About a billion Suns, one of the heaviest black holes in any nearby galaxy, yet it barely feeds and glows only faintly.' },
+  { id: 'ngc-4889-bh', name: 'NGC 4889* (black hole)', type: 'Ultramassive black hole', solarMasses: 2.1e10, ra: 13.0023, dec: 27.977, distPc: 9.4e7, disk: 0.2, temp: 3000, markTo: 24,
+    fact: 'In the brightest galaxy of the Coma Cluster: about 21 billion Suns, one of the most massive black holes known, now dormant after its feeding days.' },
+  { id: 'holmberg-15a-bh', name: 'Holmberg 15A*', type: 'Ultramassive black hole', solarMasses: 4e10, ra: 0.6972, dec: -9.303, distPc: 2.7e8, disk: 0.15, temp: 3000, markTo: 24.5,
+    fact: 'About 40 billion Suns, measured from the motions of the stars around it (2019): the heaviest black hole weighed that directly.' },
+  { id: '3c-273', name: '3C 273', type: 'Quasar black hole', solarMasses: 8.9e8, ra: 12.4852, dec: 2.0525, distPc: 6.9e8, disk: 1.4, temp: 9000, rOut: 18, jet: 1, markTo: 25.5,
+    fact: 'The first quasar ever identified (1963), and the brightest one in our sky. Its black hole, about 900 million Suns, shoots a jet 200,000 light-years long.' },
+  { id: 'ton-618', name: 'TON 618', type: 'Ultramassive black hole (quasar)', solarMasses: 6.6e10, ra: 12.4736, dec: 31.4772, distPc: 5.6e9, disk: 1.4, temp: 9000, rOut: 20, markTo: 26,
     fact: 'One of the most massive black holes known, about 66 billion Suns. The gas swirling into it shines brighter than 100 trillion Suns; its light has traveled 10.8 billion years to reach us.' },
-  { id: 'cygnus-x1', name: 'Cygnus X-1', type: 'Stellar black hole', solarMasses: 21, ra: 19.9727, dec: 35.2017, distPc: 2220, disk: true,
+  { id: 'cygnus-x1', name: 'Cygnus X-1', type: 'Stellar black hole', solarMasses: 21, ra: 19.9727, dec: 35.2017, distPc: 2220, disk: 1, temp: 25000, rOut: 11, jet: 0.4,
+    companion: { name: 'HDE 226868 (blue supergiant)', radiusSun: 22, distAU: 0.2, periodDays: 5.6, tempK: 31000, stream: true },
     fact: 'The first object widely accepted as a black hole (1972): 21 Suns\' worth of collapsed star, pulling gas off the blue supergiant it orbits every 5.6 days.' },
-  { id: 'gaia-bh1', name: 'Gaia BH1', type: 'Dormant stellar black hole', solarMasses: 9.6, ra: 17.4781, dec: -0.5811, distPc: 480, disk: false,
+  { id: 'v404-cyg', name: 'V404 Cygni', type: 'Stellar black hole', solarMasses: 9, ra: 20.4011, dec: 33.8672, distPc: 2390, disk: 1, temp: 22000, rOut: 10, jet: 0.5,
+    companion: { name: 'V404 Cygni\'s companion (orange giant)', radiusSun: 6, distAU: 0.146, periodDays: 6.47, tempK: 4300, stream: true },
+    fact: 'A 9-Sun black hole that erupted in 2015, briefly becoming the brightest X-ray source in the sky. It feeds on a giant star that circles it every 6.5 days.' },
+  { id: 'grs-1915', name: 'GRS 1915+105', type: 'Microquasar black hole', solarMasses: 12, ra: 19.2532, dec: 10.9456, distPc: 9400, disk: 1, temp: 28000, rOut: 12, jet: 1,
+    companion: { name: 'GRS 1915+105\'s companion (orange giant)', radiusSun: 18, distAU: 0.475, periodDays: 33.9, tempK: 4500, stream: true },
+    fact: 'A microquasar spinning near the fastest rate possible. Its jets fly out at over 90% of light speed, and were the first in our galaxy seen to seem to move faster than light (an illusion of perspective).' },
+  { id: 'a0620', name: 'A0620-00', type: 'Stellar black hole', solarMasses: 6.6, ra: 6.379, dec: -0.3458, distPc: 1500, disk: 0.25, temp: 15000, rOut: 9,
+    companion: { name: 'A0620-00\'s companion (orange dwarf)', radiusSun: 0.75, distAU: 0.0176, periodDays: 0.323, tempK: 4400, stream: true },
+    fact: 'One of the nearest known black holes, 6.6 Suns, with an orange dwarf whipping around it every 7.75 hours. It flared brightly in 1975 and has been quiet since.' },
+  { id: 'gaia-bh1', name: 'Gaia BH1', type: 'Dormant stellar black hole', solarMasses: 9.6, ra: 17.4781, dec: -0.5811, distPc: 480, disk: 0,
+    companion: { name: 'Gaia BH1\'s companion (Sun-like star)', radiusSun: 1, distAU: 1.4, periodDays: 185.6, tempK: 5850 },
     fact: 'The nearest known black hole, about 1,560 light-years away. It\'s dormant: no glowing disk, just a Sun-like star circling it every 186 days.' },
-  { id: 'gaia-bh3', name: 'Gaia BH3', type: 'Dormant stellar black hole', solarMasses: 33, ra: 19.6553, dec: 14.9317, distPc: 590, disk: false,
+  { id: 'gaia-bh2', name: 'Gaia BH2', type: 'Dormant stellar black hole', solarMasses: 8.9, ra: 13.838, dec: -59.2389, distPc: 1160, disk: 0,
+    companion: { name: 'Gaia BH2\'s companion (red giant)', radiusSun: 7.8, distAU: 4.96, periodDays: 1277, tempK: 4600 },
+    fact: 'A dormant 8.9-Sun black hole about 3,800 light-years away, circled by a red giant on a 3.5-year orbit.' },
+  { id: 'gaia-bh3', name: 'Gaia BH3', type: 'Dormant stellar black hole', solarMasses: 33, ra: 19.6553, dec: 14.9317, distPc: 590, disk: 0,
+    companion: { name: 'Gaia BH3\'s companion (old giant)', radiusSun: 4.9, distAU: 16.2, periodDays: 4253, tempK: 5200 },
     fact: 'The heaviest stellar black hole known in the Milky Way, 33 Suns, found in 2024 from the wobble of the old star orbiting it.' },
+  { id: 'omega-cen-bh', name: 'Omega Centauri black hole', type: 'Intermediate-mass black hole', solarMasses: 8200, ra: 13.4465, dec: -47.4794, distPc: 5430, disk: 0, sky: 'globular',
+    fact: 'At least 8,200 Suns: a rare "in-between" black hole, found in 2024 from seven stars racing through the cluster\'s core too fast to stay bound without it. Its packed cluster of ten million stars surrounds it.' },
 ];
 export const horizonM = (solarMasses: number) => solarMasses * 2953;
 

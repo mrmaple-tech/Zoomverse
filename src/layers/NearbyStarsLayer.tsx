@@ -1,13 +1,13 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Color, type Group } from 'three';
+import type { Group } from 'three';
 import { STARS, FAMOUS_STARS } from '../data/stars.ts';
 import { LAYERS } from '../data/layers.ts';
 import { PC, eqjToScene } from '../lib/coords.ts';
 import { get } from '../catalog.ts';
 import { starColor, starTemp } from '../lib/stars.ts';
 import { selectOnClick, useStore } from '../store.ts';
-import { sunMaterial } from '../scene/materials.ts';
+import { starSurface } from '../scene/materials.ts';
 import { Glow } from '../scene/Glow.tsx';
 import { visitedStar } from './ExoplanetLayer.tsx';
 import { Label } from '../scene/Label.tsx';
@@ -54,26 +54,12 @@ function FocusedStar() {
   return id ? <StarBody key={id} id={id} /> : null;
 }
 
-const WHITE: [number, number, number] = [1, 1, 1];
-const mix = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t) as [number, number, number];
-
 function StarBody({ id }: { id: string }) {
   const ref = useRef<Group>(null!);
   const { pos, radius, material, color } = useMemo(() => {
     const [, x, y, z, , , bv] = STARS[+id.slice(5)];
-    const t = starTemp(bv), rSun = get(id).radiusM! / 6.957e8;
-    // blackbody colors are pale; push the saturation up so a red giant reads red and a hot star blue
-    const raw = starColor(t), top = Math.max(...raw), col = raw.map((v) => Math.max(0, top - (top - v) * 2.2)) as [number, number, number];
-    // cool stars darken toward red in their granulation gaps; hot ones stay their own color
-    const dark: [number, number, number] = t < 6500 ? [col[0], col[1] * 0.5, col[2] * 0.3] : mix(col, [0, 0, 0], 0.4);
-    const light = mix(col, WHITE, 0.12);
-    return {
-      pos: eqjToScene(x, y, z).toArray(),
-      radius: get(id).radiusM! / PC,
-      // giants have far bigger convection cells relative to their size
-      material: sunMaterial(dark, light, 1 / (1 + 0.25 * Math.log2(Math.max(1, rSun)))),
-      color: `#${new Color(...light).getHexString()}`,
-    };
+    const look = starSurface(starTemp(bv), get(id).radiusM! / 6.957e8, starColor);
+    return { pos: eqjToScene(x, y, z).toArray(), radius: get(id).radiusM! / PC, material: look.material, color: look.glow };
   }, [id]);
   useFrame(() => {
     const { logD, readable } = useStore.getState();
