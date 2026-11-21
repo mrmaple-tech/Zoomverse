@@ -299,6 +299,28 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   .timebar .note { position: static; transform: none; order: 10; width: 100%; text-align: center; white-space: normal; text-shadow: none; }
 }
 
+/* ---------- Phones and tablets (touch only: desktop windows of any size keep the layout above) ---------- */
+.filters-scale { display: none; }
+@media (hover: none) and (pointer: coarse) and (max-width: 760px) {
+  :root { --nav-h: 96px; }
+  /* search gets the whole second row beside Settings; Readable / True scale moves into Settings */
+  .nav-right > .seg { display: none; }
+  .filters-scale { display: block; padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid var(--hairline); }
+  .filters-menu { min-width: 240px; background: #161618; }
+  .filters-scale .seg button { white-space: nowrap; }
+  .search { height: 40px; }
+  .search input { font-size: 16px; } /* 16px keeps iOS from zooming the page on focus */
+  .search-results li { padding: 11px 12px; }
+  /* two-row time bar: controls, then date / Now / moments */
+  .timebar input { flex: 1.8 1 0; width: 0; min-width: 0; font-size: 13px; }
+  .timebar .moments { flex: 1 1 0; width: 0; min-width: 0; font-size: 13px; padding-right: 26px; }
+  .rail { bottom: 140px; }
+  .scalebar { bottom: 190px; }
+  .caption { bottom: 180px; }
+  /* the info card is a bottom sheet over the time bar, so its buttons are always reachable */
+  .card { z-index: 55; bottom: max(var(--gap), env(safe-area-inset-bottom)); max-height: 58vh; padding: 22px 20px 18px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }

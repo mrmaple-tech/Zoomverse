@@ -8,6 +8,7 @@ import { get } from '../catalog.ts';
 import { simDate, useStore } from '../store.ts';
 import { clock, sunWorld } from './materials.ts';
 import { Rig } from './Rig.tsx';
+import { MOBILE } from '../lib/device.ts';
 import { K, Space } from './Space.tsx';
 import { Label } from './Label.tsx';
 import { BlackHoles } from './BlackHole.tsx';
@@ -84,7 +85,8 @@ function Precompile() {
  * which was itself a source of stutter.
  */
 // top tier: full sharpness on high-DPI screens (capped at 2), 1.5 on ordinary ones
-export const TOP_DPR = Math.max(1.5, Math.min(2, window.devicePixelRatio));
+// phones: 1.5 at most (their 3× screens would quadruple the pixels a small GPU has to shade)
+export const TOP_DPR = MOBILE ? Math.min(1.5, window.devicePixelRatio) : Math.max(1.5, Math.min(2, window.devicePixelRatio));
 const DPR = [1, 1, Math.min(1.5, TOP_DPR), TOP_DPR];
 // step down whenever the frame rate sags below ~55 fps (at 60 Hz; proportionally on faster screens)
 const BOUNDS = (hz: number) => [Math.min(55, hz * 0.85), hz] as [number, number];
@@ -126,7 +128,7 @@ export function Universe() {
       <color attach="background" args={['#020308']} />
       {watch && <PerformanceMonitor bounds={BOUNDS} onDecline={() => step(-1)} />}
       <ambientLight intensity={0.06} />
-      <Stars radius={300} depth={80} count={7000} factor={5} saturation={0.4} fade />
+      <Stars radius={300} depth={80} count={MOBILE ? 4000 : 7000} factor={5} saturation={0.4} fade />
       <Rig />
       <Space unit={AU}>
         {/* Precompile waits inside the boundary so Earth's textured materials exist when it runs */}

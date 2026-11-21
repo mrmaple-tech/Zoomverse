@@ -19,6 +19,7 @@ import { useStore } from '../store.ts';
 import { Label } from './Label.tsx';
 import { pointsMaterial, starSurface } from './materials.ts';
 import { Glow } from './Glow.tsx';
+import { MOBILE } from '../lib/device.ts';
 import { cloud } from './PointCloud.tsx';
 import { K } from './Space.tsx';
 
@@ -274,7 +275,7 @@ export function BlackHole({ id, rs: RS, info, crowd }: Props) {
     // drawn like every other shader here; the tone mapping lines make it match drei's <Stars> when it is re-photographed below
     const skyMat = pointsMaterial(0);
     skyMat.fragmentShader = skyMat.fragmentShader.replace(/\}\s*$/, '#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}');
-    const cube = new WebGLCubeRenderTarget(512, { type: HalfFloatType });
+    const cube = new WebGLCubeRenderTarget(MOBILE ? 256 : 512, { type: HalfFloatType });
     const mat = material();
     const look = comp ? starSurface(comp.tempK, comp.radiusSun, starColor) : null;
     return {
@@ -342,6 +343,7 @@ export function BlackHole({ id, rs: RS, info, crowd }: Props) {
     // Photograph the scene without the hole: once through the camera (every frame), and now and then
     // in all six directions from the hole for light that arrives from off screen.
     gl.getDrawingBufferSize(g.size);
+    if (MOBILE) g.size.multiplyScalar(0.5); // the photo behind the lens can be softer on a phone
     if (g.shot.width !== g.size.x || g.shot.height !== g.size.y) g.shot.setSize(g.size.x, g.size.y);
     const target = gl.getRenderTarget();
     mesh.current.visible = false;

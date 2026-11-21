@@ -8,6 +8,7 @@ import { get } from '../catalog.ts';
 import { AU } from '../lib/coords.ts';
 import type { Fade } from '../data/layers.ts';
 import { Label } from './Label.tsx';
+import { MOBILE } from '../lib/device.ts';
 import { useFade } from './Space.tsx';
 
 interface Props {
@@ -38,7 +39,7 @@ export function Body({ id, window, minFrac = 0.006, children, label = true, onFr
   return (
     <group ref={group}>
       <mesh ref={mesh} onClick={selectOnClick(id)} onDoubleClick={flyOnDoubleClick(id)}>
-        <sphereGeometry args={[1, 128, 64]} />
+        <sphereGeometry args={MOBILE ? [1, 64, 32] : [1, 128, 64]} />
         {children}
       </mesh>
       {label && <Label id={id} text={obj.name} window={window} />}

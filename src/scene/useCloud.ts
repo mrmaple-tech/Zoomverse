@@ -2,6 +2,13 @@
 import { useEffect, useState } from 'react';
 import { BufferAttribute, BufferGeometry } from 'three';
 import type { CloudArrays } from './cloud.ts';
+import { MOBILE } from '../lib/device.ts';
+
+/** Phones: big clouds get half the points, each a little brighter, so the look holds at half the cost. */
+const lighter = (s: CloudStep): CloudStep => {
+  const { count, bright = 1 } = s.opts as { count?: number; bright?: number };
+  return count && count > 20_000 ? { ...s, opts: { ...s.opts, count: Math.round(count / 2), bright: bright * 1.4 } } : s;
+};
 
 export type CloudStep = { gen: string; opts: Record<string, number | number[]> };
 
@@ -32,7 +39,7 @@ function request(steps: CloudStep[], key: string) {
   p = new Promise<BufferGeometry>((resolve) => {
     const id = nextId++;
     waiting.set(id, resolve);
-    worker!.postMessage({ id, steps });
+    worker!.postMessage({ id, steps: MOBILE ? steps.map(lighter) : steps });
   });
   cache.set(key, p); // same recipe, same cloud: revisits are instant
   return p;

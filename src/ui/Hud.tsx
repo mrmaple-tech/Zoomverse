@@ -158,6 +158,7 @@ function Filters() {
     <details className="filters">
       <summary>Settings</summary>
       <div className="filters-menu glass">
+        <div className="filters-scale"><ScaleToggle /></div>
         {FILTERS.map(([k, name]) => (
           <label key={k}>
             <input type="checkbox" checked={show[k]} onChange={() => set({ show: { ...show, [k]: !show[k] } })} />
