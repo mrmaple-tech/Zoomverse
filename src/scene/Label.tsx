@@ -29,9 +29,10 @@ export function Label({ id, text, window, position, variant, shown }: Props) {
     // the focused object stays labeled up close, but not once zoomed out past its own window
     let o = shown && !shown() ? 0 : (s.focusId === id || s.flight?.to === id) && s.logD < window[2] ? 1 : fade(s.logD, window);
     // labels go by zoom, not by place: hide ones whose object is way off in the distance from where
-    // you're looking (the planets' labels while you're at Sirius, say). "You are here" always shows.
+    // you're looking (the planets' labels while you're at Sirius, say). "You are here" always shows, and
+    // satellites (always beside Earth) skip the check: it would rerun their orbit math every frame.
     const obj = byId.get(id);
-    if (o > 0 && obj && variant !== 'here' && obj.pos(new Date(s.simTime)).distanceTo(s.focus) > 100 * 10 ** s.logD) o = 0;
+    if (o > 0 && obj && !obj.earthOrbit && variant !== 'here' && obj.pos(new Date(s.simTime)).distanceTo(s.focus) > 100 * 10 ** s.logD) o = 0;
     el.current.style.opacity = String(o);
     el.current.style.visibility = o < 0.25 ? 'hidden' : 'visible';
   });

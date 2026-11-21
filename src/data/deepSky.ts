@@ -1,3 +1,5 @@
+import { Vector3 } from 'three';
+import { galDir } from '../lib/coords.ts';
 export interface Galaxy {
   id: string;
   name: string;
@@ -149,21 +151,10 @@ export interface Structure {
 export const STRUCTURES: Structure[] = [
   { id: 'virgo-cluster', name: 'Virgo Cluster', type: 'Galaxy cluster', l: 283.8, b: 74.5, distMpc: 16.5, sizeMpc: 2.2,
     fact: 'About 1,300 galaxies; its gravity is slowly pulling the Local Group toward it.' },
-  { id: 'great-attractor', name: 'Great Attractor', type: 'Gravitational anomaly', l: 307.8, b: 9.3, distMpc: 75, sizeMpc: 50,
-    fact: 'A vast concentration of mass about 250 million light-years away, hidden behind the Milky Way\'s disk. It pulls the Milky Way, the Local Group and thousands of other galaxies toward it at hundreds of km/s; the streams of light show that flow.' },
   { id: 'coma-cluster', name: 'Coma Cluster', type: 'Galaxy cluster', l: 58.1, b: 87.96, distMpc: 99, sizeMpc: 6,
     fact: 'Fritz Zwicky first inferred dark matter in 1933 from how fast its galaxies move.' },
   { id: 'bootes-void', name: 'Boötes Void', type: 'Cosmic void', l: 80, b: 60, distMpc: 210, sizeMpc: 100,
     fact: 'A near-empty sphere ~330 million light-years across with only about 60 galaxies.' },
-];
-
-/** The great galaxy clusters around the Great Attractor (galactic l, b in degrees; distance and radius in Mpc). */
-export const ATTRACTOR_CLUSTERS = [
-  { name: 'Norma Cluster', l: 325.3, b: -7.26, distMpc: 68, radiusMpc: 2, share: 0.35 },
-  { name: 'CIZA J1324.7−5736', l: 307.4, b: 5.0, distMpc: 74, radiusMpc: 1.2, share: 0.12 },
-  { name: 'Centaurus Cluster', l: 302.4, b: 21.6, distMpc: 52, radiusMpc: 1.5, share: 0.2 },
-  { name: 'Hydra Cluster', l: 269.6, b: 26.5, distMpc: 50, radiusMpc: 1.3, share: 0.15 },
-  { name: 'Pavo II Cluster', l: 332.3, b: -23.6, distMpc: 60, radiusMpc: 1, share: 0.1 },
 ];
 
 export interface Supercluster {
@@ -180,6 +171,15 @@ export interface Supercluster {
 }
 
 export const SUPERCLUSTERS: Supercluster[] = [
+  { id: 'great-attractor', name: 'Great Attractor', type: 'Gravitational anomaly', sizeMpc: 50, flow: true,
+    members: [
+      { name: 'Norma Cluster', l: 325.3, b: -7.26, distMpc: 68, radiusMpc: 2, share: 0.35 },
+      { name: 'CIZA J1324.7−5736', l: 307.4, b: 5.0, distMpc: 74, radiusMpc: 1.2, share: 0.12 },
+      { name: 'Centaurus Cluster', l: 302.4, b: 21.6, distMpc: 52, radiusMpc: 1.5, share: 0.2 },
+      { name: 'Hydra Cluster', l: 269.6, b: 26.5, distMpc: 50, radiusMpc: 1.3, share: 0.15 },
+      { name: 'Pavo II Cluster', l: 332.3, b: -23.6, distMpc: 60, radiusMpc: 1, share: 0.1 },
+    ],
+    fact: 'A vast concentration of mass about 250 million light-years away, hidden behind the Milky Way\'s disk. It pulls the Milky Way, the Local Group and thousands of other galaxies toward it at hundreds of km/s; the streams of light show that flow.' },
   { id: 'laniakea', name: 'Laniakea Supercluster', type: 'Supercluster (our home)', sizeMpc: 160, flow: true,
     members: [
       { name: 'Norma Cluster', l: 325.3, b: -7.26, distMpc: 68, radiusMpc: 2, share: 0.04 },
@@ -242,14 +242,12 @@ export const SUPERCLUSTERS: Supercluster[] = [
 ];
 
 /** Share-weighted center of a supercluster's members, in Mpc (scene frame), and each member relative to it. */
-export function superclusterLayout(s: Supercluster, galDir: (l: number, b: number) => { multiplyScalar(n: number): Vec3 }) {
+export function superclusterLayout(s: Supercluster) {
   const pts = s.members.map((m) => galDir(m.l, m.b).multiplyScalar(m.distMpc));
   const total = s.members.reduce((a, m) => a + m.share, 0);
-  const c = { x: 0, y: 0, z: 0 };
-  pts.forEach((p, i) => { c.x += (p.x * s.members[i].share) / total; c.y += (p.y * s.members[i].share) / total; c.z += (p.z * s.members[i].share) / total; });
-  return { center: [c.x, c.y, c.z] as [number, number, number], offsets: pts.map((p) => [p.x - c.x, p.y - c.y, p.z - c.z] as [number, number, number]) };
+  const c = pts.reduce((acc, p, i) => acc.addScaledVector(p, s.members[i].share / total), new Vector3());
+  return { center: c.toArray(), offsets: pts.map((p) => p.sub(c).toArray()) };
 }
-type Vec3 = { x: number; y: number; z: number };
 
 /**
  * Black holes you can fly up to. Galaxy-centered ones sit at their host galaxy's position; the others

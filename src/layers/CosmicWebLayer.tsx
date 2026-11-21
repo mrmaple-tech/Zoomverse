@@ -22,7 +22,7 @@ export function CosmicWebLayer() {
       {/* World-sized points: distant ones drop to faint single pixels instead of overdrawing the screen. */}
       {near && <PointCloud geometry={near} worldSize={1} />}
       {far && <PointCloud geometry={far} worldSize={9} />}
-      {STRUCTURES.filter((s) => s.id !== 'great-attractor').map((s) => ( // the Great Attractor labels itself
+      {STRUCTURES.map((s) => (
         <Label key={s.id} id={s.id} text={s.name} window={s.distMpc > 150 ? [24.3, 24.8, 26, 26.6] : s.distMpc < 50 ? [23.4, 23.8, 24.8, 25.15] : [23.6, 24.0, 25.4, 26]} position={galDir(s.l, s.b).multiplyScalar(s.distMpc).toArray()} />
       ))}
       <Fader window={EDGE_FADE}>

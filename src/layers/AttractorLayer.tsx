@@ -1,24 +1,13 @@
-// The Great Attractor (Mpc space): the clusters around it, the galaxy filaments joining them, streams of
-// light showing galaxies falling in, and the Norma Cluster at its heart to zoom into, galaxy by galaxy.
+// The Norma Cluster (Mpc space), and the streams of light used to show galaxies falling into a supercluster.
 import { useMemo } from 'react';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, ShaderMaterial } from 'three';
-import { ATTRACTOR_CLUSTERS as CLUSTERS, NORMA, STRUCTURES } from '../data/deepSky.ts';
+import { NORMA } from '../data/deepSky.ts';
 import type { Fade } from '../data/layers.ts';
 import { galDir, gauss, rng } from '../lib/coords.ts';
 import { Inspectable } from '../scene/Inspectable.tsx';
 import { clock } from '../scene/materials.ts';
 import type { CloudStep } from '../scene/useCloud.ts';
 
-const GA = STRUCTURES.find((s) => s.id === 'great-attractor')!;
-const CENTER = galDir(GA.l, GA.b).multiplyScalar(GA.distMpc);
-// cluster centers relative to the Great Attractor's position
-const OFFSETS = CLUSTERS.map((k) => galDir(k.l, k.b).multiplyScalar(k.distMpc).sub(CENTER));
-const R = GA.sizeMpc / 2;
-
-const REGION = (count: number, bright: number): CloudStep[] => [{
-  gen: 'supercluster',
-  opts: { count, radius: R, seed: 71, bright, clusters: CLUSTERS.flatMap((k, i) => [OFFSETS[i].x, OFFSETS[i].y, OFFSETS[i].z, k.radiusMpc, k.share]) },
-}];
 const CLUSTER = (count: number, bright: number): CloudStep[] => [{ gen: 'cluster', opts: { count, radius: NORMA.sizeMpc / 2, seed: 72, bright, jellyfish: 1 } }];
 
 /** Streaks of light falling in toward the heaviest cluster from all around: the attraction made visible. */
@@ -61,26 +50,15 @@ export function Flow({ radius, position, count = 4000, seed = 73 }: { radius: nu
   return <points geometry={geometry} material={material} position={position} />;
 }
 
-const GA_SHOWN: Fade = [23.0, 23.8, 26.0, 26.6];
-const GA_LABEL: Fade = [23.6, 24.0, 25.4, 26.0];
 const NORMA_SHOWN: Fade = [21.6, 22.4, 24.6, 25.2];
 const NORMA_LABEL: Fade = [22.6, 23.0, 24.1, 24.5];
 
+/** The Norma Cluster, at the heart of the Great Attractor (itself one of the superclusters), to zoom into galaxy by galaxy. */
 export function AttractorLayer() {
   return (
-    <>
-      <Inspectable
-        id={GA.id} name={GA.name} window={GA_SHOWN} label={GA_LABEL} position={CENTER.toArray()}
-        coarse={REGION(8000, 1.6)} fine={REGION(150_000, 0.55)} size={[0.25, 0.09]}
-        glow={{ size: R * 0.8, color: '#b9a8ff' }}
-      >
-        {/* the flow converges on the Norma Cluster, the heaviest of the group */}
-        <Flow radius={R} position={OFFSETS[0].toArray()} />
-      </Inspectable>
-      <Inspectable
-        id={NORMA.id} name={NORMA.name} window={NORMA_SHOWN} label={NORMA_LABEL} position={galDir(NORMA.l, NORMA.b).multiplyScalar(NORMA.distMpc).toArray()}
-        coarse={CLUSTER(4000, 1.4)} fine={CLUSTER(90_000, 0.6)} size={[0.03, 0.012]}
-      />
-    </>
+    <Inspectable
+      id={NORMA.id} name={NORMA.name} window={NORMA_SHOWN} label={NORMA_LABEL} position={galDir(NORMA.l, NORMA.b).multiplyScalar(NORMA.distMpc).toArray()}
+      coarse={CLUSTER(4000, 1.4)} fine={CLUSTER(90_000, 0.6)} size={[0.03, 0.012]}
+    />
   );
 }

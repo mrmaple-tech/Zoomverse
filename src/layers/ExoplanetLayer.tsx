@@ -13,10 +13,9 @@ import { Orbit } from '../scene/Orbit.tsx';
 import { Fader, K } from '../scene/Space.tsx';
 import { atmosphereMaterial, planetMaterial } from '../scene/materials.ts';
 
-const SYSTEMS = new Map<string, Exoplanet[]>();
-for (const e of EXOPLANETS) SYSTEMS.set(e.host, [...(SYSTEMS.get(e.host) ?? []), e]);
 /** catalog star id → its planets */
-const BY_STAR = new Map([...SYSTEMS.values()].map((ps) => [get(ps[0].id).host!, ps]));
+const BY_STAR = new Map<string, Exoplanet[]>();
+for (const e of EXOPLANETS) { const h = get(e.id).host!; BY_STAR.set(h, [...(BY_STAR.get(h) ?? []), e]); }
 
 /** The star whose system you're at (focused on, or flying to, the star or one of its planets). */
 export const visitedStar = (id: string | null | undefined) => (!id ? null : id.startsWith('exo-') ? get(id).host! : BY_STAR.has(id) ? id : null);

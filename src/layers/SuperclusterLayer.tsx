@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { useStore } from '../store.ts';
 import { SUPERCLUSTERS, superclusterLayout, type Supercluster } from '../data/deepSky.ts';
 import type { Fade } from '../data/layers.ts';
-import { galDir } from '../lib/coords.ts';
 import { Inspectable } from '../scene/Inspectable.tsx';
 import { Label } from '../scene/Label.tsx';
 import type { CloudStep } from '../scene/useCloud.ts';
@@ -14,7 +13,7 @@ const SHOWN: Fade = [23.4, 24.0, 26.2, 26.8];
 const LABEL: Fade = [24.0, 24.4, 25.6, 26.2];
 
 function SuperclusterView({ s, seed }: { s: Supercluster; seed: number }) {
-  const { center, offsets } = useMemo(() => superclusterLayout(s, galDir), [s]);
+  const { center, offsets } = useMemo(() => superclusterLayout(s), [s]);
   const R = s.sizeMpc / 2;
   const recipe = (count: number, bright: number): CloudStep[] => [{
     gen: 'supercluster',

@@ -151,8 +151,6 @@ export const CATALOG: CatalogObject[] = [
   })(),
   ...STRUCTURES.map((s) => {
     const p = galDir(s.l, s.b).multiplyScalar(s.distMpc * MPC);
-    // the Great Attractor is a place you can fly into; the others are just marked on the cosmic web
-    if (s.id === 'great-attractor') return { ...s, size: formatSize((s.sizeMpc * MPC) / 2), viewLogD: Math.log10(s.sizeMpc * MPC * 1.3), minLogD: Math.log10(2 * MPC), pos: () => p };
     return { ...s, size: formatSize((s.sizeMpc * MPC) / 2), viewLogD: Math.max(shown(8), Math.log10(s.sizeMpc * MPC * 4)), minLogD: shown(8), pos: () => p };
   }),
   ...BLACK_HOLES.map((h) => {
@@ -167,7 +165,7 @@ export const CATALOG: CatalogObject[] = [
     };
   }),
   ...SUPERCLUSTERS.map((s) => {
-    const p = new Vector3(...superclusterLayout(s, galDir).center).multiplyScalar(MPC), D = s.sizeMpc * MPC;
+    const p = new Vector3(...superclusterLayout(s).center).multiplyScalar(MPC), D = s.sizeMpc * MPC;
     // Laniakea surrounds us, so it's framed from wherever you are. The others are seen from 70° off our
     // line of sight: from behind Earth, our own neighborhood would sit in the foreground, in the way.
     const toUs = p.clone().normalize().negate(), side = new Vector3().crossVectors(toUs, new Vector3(0, 1, 0)).normalize();

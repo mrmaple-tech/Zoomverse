@@ -1,11 +1,9 @@
 // Procedural point clouds: galaxies (authored in their own plane, z = thickness) and the cosmic web.
 import { Vector3 } from 'three';
-import { gauss, rng } from '../lib/random.ts';
-import type { Cloud } from './cloud.ts';
+import { gauss, rng, unitVec } from '../lib/random.ts';
+import { mix, type Cloud, type RGB } from './cloud.ts';
 
 
-type RGB = readonly [number, number, number];
-const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const CORE: RGB = [1, 0.8, 0.55], OLD: RGB = [0.9, 0.82, 0.7], YOUNG: RGB = [0.6, 0.73, 1], HII: RGB = [1, 0.4, 0.6], GAS: RGB = [1, 0.32, 0.38];
 const TAU = Math.PI * 2;
 
@@ -246,7 +244,7 @@ export function addCluster(c: Cloud, { count, radius: R, seed = 1, bright = 1, c
   const r = rng(seed), rc = R * 0.12;
   const push = (x: number, y: number, z: number, col: RGB, b: number, size: number) =>
     c.push(x + cx, y + cy, z + cz, col[0] * b * bright, col[1] * b * bright, col[2] * b * bright, size);
-  const dir = () => { const z = r() * 2 - 1, p = r() * TAU, s = Math.sqrt(1 - z * z); return [s * Math.cos(p), s * Math.sin(p), z]; };
+  const dir = () => unitVec(r);
   // big galaxies are rarer but get more stars, so up close they resolve as fuzzy shapes (~23 points each on average)
   const galaxies = Math.round((count * 0.8) / 23);
   for (let g = 0; g < galaxies; g++) {

@@ -10,3 +10,8 @@ export function rng(seed: number) {
   };
 }
 export const gauss = (r: () => number) => Math.sqrt(-2 * Math.log(r() + 1e-12)) * Math.cos(2 * Math.PI * r());
+/** A random direction, uniform over the sphere. */
+export function unitVec(r: () => number): [number, number, number] {
+  const z = r() * 2 - 1, p = r() * 2 * Math.PI, s = Math.sqrt(1 - z * z);
+  return [s * Math.cos(p), s * Math.sin(p), z];
+}
