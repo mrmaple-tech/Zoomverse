@@ -136,8 +136,8 @@ export function Universe() {
         {/* Precompile waits inside the boundary so Earth's textured materials exist when it runs */}
         <Suspense fallback={null}><EarthMoonLayer />{far && <Precompile />}</Suspense>
         <InnerSolarLayer />
-        <OuterSolarLayer />
-        {far && <HeliosphereLayer />}
+        {/* Pluto's orbit line alone costs ~60 ms of astronomy-engine integration; not visible from Earth anyway */}
+        {far && <><OuterSolarLayer /><HeliosphereLayer /></>}
         <YouAreHere />
       </Space>
       {far && (

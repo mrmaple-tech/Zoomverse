@@ -1,7 +1,10 @@
 // Distance/scale formatting shared by the scale bar and info cards.
 import { AU, LY, MPC, C_LIGHT } from './coords.ts';
 
-const nf = (n: number, d = 0) => n.toLocaleString('en-US', { maximumFractionDigits: d });
+// toLocaleString builds a new formatter on every call (~40 µs); the catalog formats 1000+ sizes at startup
+// and the scale bar formats every frame, so keep one formatter per precision.
+const formats: Intl.NumberFormat[] = [];
+const nf = (n: number, d = 0) => (formats[d] ??= new Intl.NumberFormat('en-US', { maximumFractionDigits: d })).format(n);
 
 /** Largest 1/2/5×10^n ≤ x. */
 export function niceFloor(x: number) {

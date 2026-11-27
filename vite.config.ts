@@ -6,6 +6,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: './',
+  // stars.json / sky.json ship as JSON.parse('…'): parses faster than the same data as a JS object literal
+  json: { stringify: true },
   build: {
     chunkSizeWarningLimit: 800,
     rollupOptions: { output: { manualChunks: { three: ['three'], r3f: ['react', 'react-dom', '@react-three/fiber', '@react-three/drei', '@react-three/postprocessing'] } } },

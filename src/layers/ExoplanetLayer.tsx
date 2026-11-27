@@ -8,7 +8,7 @@ import type { Fade } from '../data/layers.ts';
 import { get } from '../catalog.ts';
 import { AU } from '../lib/coords.ts';
 import { simDate, useStore } from '../store.ts';
-import { Body } from '../scene/Body.tsx';
+import { Body, SPHERE } from '../scene/Body.tsx';
 import { Orbit } from '../scene/Orbit.tsx';
 import { Fader, K } from '../scene/Space.tsx';
 import { atmosphereMaterial, planetMaterial } from '../scene/materials.ts';
@@ -56,7 +56,7 @@ function Planet({ p, light, window }: { p: Exoplanet; light: { value: Vector3 };
   return (
     <Body id={p.id} window={window}>
       <primitive object={material} attach="material" />
-      {halo && <mesh scale={1.04} material={halo}><sphereGeometry args={[1, 64, 32]} /></mesh>}
+      {halo && <mesh scale={1.04} material={halo} geometry={SPHERE} />}
     </Body>
   );
 }

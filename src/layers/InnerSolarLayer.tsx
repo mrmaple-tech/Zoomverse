@@ -7,7 +7,7 @@ import { swallowedTo } from '../scene/Events.tsx';
 import { get } from '../catalog.ts';
 import { BODIES, SUN, type SolarBody } from '../data/solarSystem.ts';
 import { LAYERS } from '../data/layers.ts';
-import { Body } from '../scene/Body.tsx';
+import { Body, SPHERE } from '../scene/Body.tsx';
 import { Orbit, planetSampler } from '../scene/Orbit.tsx';
 import { Fader } from '../scene/Space.tsx';
 import { Glow } from '../scene/Glow.tsx';
@@ -25,7 +25,7 @@ export function Planet({ b, children }: { b: SolarBody; children?: ReactNode }) 
     <group ref={ref}>
       <Body id={b.id} window={b.fade}>
         <primitive object={material} attach="material" />
-        {halo && <mesh scale={1.04} material={halo}><sphereGeometry args={[1, 64, 32]} /></mesh>}
+        {halo && <mesh scale={1.04} material={halo} geometry={SPHERE} />}
         {children}
       </Body>
     </group>

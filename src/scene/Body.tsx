@@ -2,7 +2,7 @@
 // "readable" (never smaller than a few pixels), plus its label.
 import { useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
-import type { Group, Mesh } from 'three';
+import { SphereGeometry, type Group, type Mesh } from 'three';
 import { useStore, simDate, selectOnClick, flyOnDoubleClick } from '../store.ts';
 import { get } from '../catalog.ts';
 import { AU } from '../lib/coords.ts';
@@ -10,6 +10,9 @@ import type { Fade } from '../data/layers.ts';
 import { Label } from './Label.tsx';
 import { MOBILE } from '../lib/device.ts';
 import { useFade } from './Space.tsx';
+
+/** One unit sphere shared by every body (and its halo): each used to build its own 8k-vertex copy. */
+export const SPHERE = MOBILE ? new SphereGeometry(1, 64, 32) : new SphereGeometry(1, 128, 64);
 
 interface Props {
   id: string;
@@ -38,8 +41,7 @@ export function Body({ id, window, minFrac = 0.006, children, label = true, onFr
   });
   return (
     <group ref={group}>
-      <mesh ref={mesh} onClick={selectOnClick(id)} onDoubleClick={flyOnDoubleClick(id)}>
-        <sphereGeometry args={MOBILE ? [1, 64, 32] : [1, 128, 64]} />
+      <mesh ref={mesh} geometry={SPHERE} onClick={selectOnClick(id)} onDoubleClick={flyOnDoubleClick(id)}>
         {children}
       </mesh>
       {label && <Label id={id} text={obj.name} window={window} />}
