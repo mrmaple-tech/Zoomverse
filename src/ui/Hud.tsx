@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useStore } from '../store.ts';
+import { useStore, visit } from '../store.ts';
 import { CATALOG, byId } from '../catalog.ts';
 import { LAYERS, layerAt } from '../data/layers.ts';
 import { scaleBar } from '../lib/scale.ts';
@@ -33,12 +33,6 @@ export function rank(query: string, limit = 8): Obj[] {
   return scored.sort((x, y) => x[0] - y[0]).slice(0, limit).map(([, o]) => o);
 }
 
-function go(o: Obj) {
-  const s = useStore.getState();
-  s.select(o.id);
-  s.flyTo(o.id);
-}
-
 function Search() {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
@@ -54,7 +48,7 @@ function Search() {
     return () => removeEventListener('keydown', key);
   }, []);
   const pick = (o: Obj) => {
-    go(o);
+    visit(o.id);
     setQ(o.name);
     setOpen(false);
     input.current?.blur();

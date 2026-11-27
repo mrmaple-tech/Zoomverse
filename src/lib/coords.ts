@@ -61,4 +61,3 @@ export function fade(logD: number, [a, b, c, d]: readonly [number, number, numbe
   return (b > a ? ss(a, b, logD) : logD >= b ? 1 : 0) * (d > c ? 1 - ss(c, d, logD) : logD <= c ? 1 : 0);
 }
 
-export { rng, gauss } from './random.ts';

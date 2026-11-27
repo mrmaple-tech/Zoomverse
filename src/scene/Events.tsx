@@ -8,7 +8,7 @@ import { SN_BANG, eventById, mergerGyr, pnRadiusAU, snShellPc, snYears, sunAt, s
 import { GALAXIES, MILKY_WAY as MW } from '../data/deepSky.ts';
 import { STARS } from '../data/stars.ts';
 import { get } from '../catalog.ts';
-import { AU, GAL_BASIS, KPC, PC, galDir, gauss, rng } from '../lib/coords.ts';
+import { AU, GAL_BASIS, KPC, PC, galDir } from '../lib/coords.ts';
 import { starColor } from '../lib/stars.ts';
 import { MOBILE } from '../lib/device.ts';
 import { useStore } from '../store.ts';
@@ -20,7 +20,7 @@ import { Space } from './Space.tsx';
 import { starTint, sunMaterial } from './materials.ts';
 import { addSpiral } from './galaxy.ts';
 import { useCloud, type CloudStep } from './useCloud.ts';
-import { unitVec } from '../lib/random.ts';
+import { gauss, rng, unitVec } from '../lib/random.ts';
 
 const smooth = (a: number, b: number, x: number) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
 const BETELGEUSE = `star-${STARS.findIndex((s) => s[0] === 'Betelgeuse')}`;

@@ -54,20 +54,14 @@ export function Rig() {
       if (e.key === '+' || e.key === '=') zoom(-0.25);
       if (e.key === '-' || e.key === '_') zoom(0.25);
     };
-    el.addEventListener('wheel', wheel, { passive: false });
-    el.addEventListener('pointerdown', down);
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
-    window.addEventListener('keydown', key);
-    return () => {
-      el.removeEventListener('wheel', wheel);
-      el.removeEventListener('pointerdown', down);
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', up);
-      window.removeEventListener('keydown', key);
-    };
+    const ac = new AbortController(), signal = ac.signal;
+    el.addEventListener('wheel', wheel, { passive: false, signal });
+    el.addEventListener('pointerdown', down, { signal });
+    window.addEventListener('pointermove', move, { signal });
+    window.addEventListener('pointerup', up, { signal });
+    window.addEventListener('pointercancel', up, { signal });
+    window.addEventListener('keydown', key, { signal });
+    return () => ac.abort();
   }, [gl]);
 
   useFrame((_, rawDt) => {

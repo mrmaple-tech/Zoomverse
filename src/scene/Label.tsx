@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import type { Group, Object3D } from 'three';
-import { useStore } from '../store.ts';
+import { useStore, visit } from '../store.ts';
 import { fade } from '../lib/coords.ts';
 import { byId } from '../catalog.ts';
 import type { Fade } from '../data/layers.ts';
@@ -47,7 +47,7 @@ export function Label({ id, text, window, position, variant, shown }: Props) {
         ref={el}
         className={`label ${variant ?? ''} ${selected ? 'selected' : ''}`}
         onClick={() => useStore.getState().select(id)}
-        onDoubleClick={() => { const s = useStore.getState(); s.select(id); s.flyTo(id); }}
+        onDoubleClick={() => visit(id)}
       >
         {(variant === 'here' || variant === 'marker') && <span className="pin" aria-hidden />}
         {text}

@@ -53,6 +53,6 @@ export function useCloud(steps: CloudStep[] | null) {
     let live = true;
     request(steps, key).then((g) => live && setGeo({ key, g }));
     return () => { live = false; };
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key]);
   return geo && geo.key === key ? geo.g : null;
 }

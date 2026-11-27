@@ -56,7 +56,6 @@ interface State {
   caption: { title: string; text: string } | null;
   /** The viewer's location, if they shared it. */
   home: { lat: number; lon: number } | null;
-  /** Opening title showing (the scene is framed higher to make room for it). */
 
   flyTo: (id: string, logD?: number, viewDir?: Vector3) => void;
   jumpToLayer: (i: number) => void;
@@ -130,7 +129,7 @@ export function useSimStep(period: number) {
   useEffect(() => {
     const i = setInterval(() => setK(step()), 500);
     return () => clearInterval(i);
-  }, [period]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [period]);
   return k;
 }
 
@@ -153,10 +152,15 @@ export const selectOnClick = (id: string) => (e: { delta: number; stopPropagatio
   useStore.getState().select(id);
 };
 
-/** onDoubleClick handler that flies the camera to `id`. */
-export const flyOnDoubleClick = (id: string) => (e: { stopPropagation: () => void }) => {
-  e.stopPropagation();
+/** Select `id` and fly the camera to it. */
+export function visit(id: string) {
   const s = useStore.getState();
   s.select(id);
   s.flyTo(id);
+}
+
+/** onDoubleClick handler that flies the camera to `id`. */
+export const flyOnDoubleClick = (id: string) => (e: { stopPropagation: () => void }) => {
+  e.stopPropagation();
+  visit(id);
 };

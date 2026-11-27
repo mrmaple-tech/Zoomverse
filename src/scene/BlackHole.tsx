@@ -12,7 +12,8 @@ import {
 import { BLACK_HOLES, GALAXIES, SGR_A, horizonM, type BlackHoleInfo } from '../data/deepSky.ts';
 import type { Fade } from '../data/layers.ts';
 import { get } from '../catalog.ts';
-import { KPC, galDir, gauss, rng } from '../lib/coords.ts';
+import { KPC, galDir } from '../lib/coords.ts';
+import { gauss, rng } from '../lib/random.ts';
 import { MAX_STEPS, STEP } from '../lib/geodesic.ts';
 import { starColor } from '../lib/stars.ts';
 import { useStore } from '../store.ts';
@@ -290,7 +291,7 @@ export function BlackHole({ id, rs: RS, info, crowd }: Props) {
       streamGeo: comp?.stream ? streamGeometry() : null,
       streamMat: comp?.stream ? streamMaterial(mat.uniforms.uTime) : null,
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => () => {
     g.shot.dispose(); g.cube.dispose(); g.mat.dispose(); g.skyMat.dispose(); g.skyGeo?.dispose();
     g.jetGeo?.dispose(); g.jetMat?.dispose(); g.counterMat?.dispose(); g.starMat?.dispose(); g.streamGeo?.dispose(); g.streamMat?.dispose();

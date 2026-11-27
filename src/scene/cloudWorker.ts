@@ -5,19 +5,11 @@ import { addCluster, addElliptical, addIrregular, addMerger, addRing, addSpiral,
 import { addEmission, addPlanetary, addRemnant } from './nebula.ts';
 
 type Opts = Record<string, number | number[]>;
-const GEN: Record<string, (c: Cloud, o: Opts) => void> = {
-  spiral: (c, o) => addSpiral(c, o as Parameters<typeof addSpiral>[1]),
-  elliptical: (c, o) => addElliptical(c, o as Parameters<typeof addElliptical>[1]),
-  irregular: (c, o) => addIrregular(c, o as Parameters<typeof addIrregular>[1]),
-  ring: (c, o) => addRing(c, o as Parameters<typeof addRing>[1]),
-  merger: (c, o) => addMerger(c, o as Parameters<typeof addMerger>[1]),
-  emission: (c, o) => addEmission(c, o as Parameters<typeof addEmission>[1]),
-  planetary: (c, o) => addPlanetary(c, o as Parameters<typeof addPlanetary>[1]),
-  remnant: (c, o) => addRemnant(c, o as Parameters<typeof addRemnant>[1]),
-  cluster: (c, o) => addCluster(c, o as Parameters<typeof addCluster>[1]),
-  supercluster: (c, o) => addSupercluster(c, o as Parameters<typeof addSupercluster>[1]),
-  web: (c, o) => { const n = o as Record<string, number>; web(c, n.seed, n.nodes, n.rMin, n.rMax, n.scatter, n.perLink, n.perNode); },
-};
+// each generator reads its own option shape; the recipe came from our own layer code
+const GEN = { spiral: addSpiral, elliptical: addElliptical, irregular: addIrregular, ring: addRing, merger: addMerger, emission: addEmission,
+  planetary: addPlanetary, remnant: addRemnant, cluster: addCluster, supercluster: addSupercluster,
+  web: (c: Cloud, n: Record<string, number>) => web(c, n.seed, n.nodes, n.rMin, n.rMax, n.scatter, n.perLink, n.perNode),
+} as unknown as Record<string, (c: Cloud, o: Opts) => void>;
 
 self.onmessage = ({ data: { id, steps } }: MessageEvent<{ id: number; steps: { gen: string; opts: Opts }[] }>) => {
   const c = cloud();
