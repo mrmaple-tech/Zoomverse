@@ -31,7 +31,7 @@ export const exoLook = (p: Exoplanet) => KIND[p.kind].look;
 
 /** True radii (Suns) of host stars: the catalog's magnitude-based estimate badly undersizes red dwarfs. */
 export const HOST_RADIUS: Record<string, number> = {
-  'Proxima Centauri': 0.154, "Barnard's Star": 0.187, 'Lalande 21185': 0.392, Ran: 0.735, 'Ross 128': 0.197, "Luyten's Star": 0.35,
+  'Proxima Centauri': 0.154, "Barnard's Star": 0.187, 'Lalande 21185': 0.392, 'Epsilon Eridani': 0.735, 'Ross 128': 0.197, "Luyten's Star": 0.35,
   'Wolf 1061': 0.307, 'Gl 876': 0.376, 'Gl 581': 0.299, 'Gl 667C': 0.42, Copernicus: 0.943, Titawin: 1.48, Chalawan: 1.17,
   Pollux: 9.06, Errai: 4.9, 'TRAPPIST-1': 0.119, 'Gl 54.1': 0.157, 'GJ 1061': 0.156, 'Lacaille 9352': 0.47, 'Groombridge 34': 0.38,
   'Gl 892': 0.778, 'Gl 674': 0.36, 'Gl 687': 0.42, 'Gl 832': 0.48, 'Gl 849': 0.46, 'Gl 357': 0.337, 'Kepler-1625': 1.79, 'Kepler-1708': 1.12,
@@ -51,7 +51,7 @@ export const EXOPLANETS: Exoplanet[] = [
   p('barnard-c', 'Barnard c', "Barnard's Star", 0.0274, 4.124, 0.72, 'rocky', 2025, BARNARD),
   p('barnard-e', 'Barnard e', "Barnard's Star", 0.0381, 6.739, 0.62, 'rocky', 2025, BARNARD),
   p('lalande-b', 'Lalande 21185 b', 'Lalande 21185', 0.0788, 12.946, 1.3, 'super', 2019, 'A super-Earth around one of the brightest red dwarfs in our sky, just 8.3 light-years away.'),
-  p('aegir', 'Ægir (Epsilon Eridani b)', 'Ran', 3.53, 2692, 11, 'giant', 2000, 'A Jupiter-like giant circling a young, Sun-like star only 10.5 light-years away, in a system with two dusty asteroid belts.'),
+  p('aegir', 'Ægir (Epsilon Eridani b)', 'Epsilon Eridani', 3.53, 2692, 11, 'giant', 2000, 'A Jupiter-like giant circling a young, Sun-like star only 10.5 light-years away, in a system with two dusty asteroid belts.'),
   p('ross-128-b', 'Ross 128 b', 'Ross 128', 0.0496, 9.866, 1.1, 'temperate', 2017, 'An Earth-sized world around an unusually calm red dwarf. In about 79,000 years Ross 128 will be the closest star to the Sun.'),
   p('luyten-c', 'Luyten c', "Luyten's Star", 0.0365, 4.723, 1.05, 'rocky', 2017, 'The inner, hotter of Luyten\'s Star\'s two known planets.'),
   p('luyten-b', 'Luyten b', "Luyten's Star", 0.0911, 18.65, 1.33, 'temperate', 2017, 'A super-Earth in the habitable zone. In 2017 a message of music and science was beamed toward it; it arrives in 2030.'),

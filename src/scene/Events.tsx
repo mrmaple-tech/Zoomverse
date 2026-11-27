@@ -17,7 +17,7 @@ import { Glow } from './Glow.tsx';
 import { Label } from './Label.tsx';
 import { PointCloud, cloud } from './PointCloud.tsx';
 import { Space } from './Space.tsx';
-import { starTint, sunMaterial } from './materials.ts';
+import { pxRatio, starTint, sunMaterial } from './materials.ts';
 import { addSpiral } from './galaxy.ts';
 import { useCloud, type CloudStep } from './useCloud.ts';
 import { gauss, rng, unitVec } from '../lib/random.ts';
@@ -86,7 +86,7 @@ const mergerMaterial = () => new ShaderMaterial({
   uniforms: {
     uC: { value: [new Vector3(), new Vector3()] }, uRot: { value: [new Matrix3(), new Matrix3()] }, uR: { value: [MW.diameterKpc / 2, M31.diameterKpc / 2] },
     uSpin: { value: 0 }, uTide: { value: 0 }, uMerge: { value: 0 }, uAxis: { value: new Vector3() }, uCenter: { value: new Vector3() },
-    uOpacity: { value: 1 }, uPx: { value: Math.min(devicePixelRatio, 2) }, uWorld: { value: 0.22 }, uHalfH: { value: 400 },
+    uOpacity: { value: 1 }, uPx: pxRatio, uWorld: { value: 0.22 }, uHalfH: { value: 400 },
   },
   vertexShader: /* glsl */ `
     attribute vec3 color; attribute float size; attribute float aGal; attribute vec3 aFinal;

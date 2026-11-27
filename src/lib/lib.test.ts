@@ -60,3 +60,14 @@ assert.ok('always' in geo && Math.abs(geo.always - 43) < 2 && geo.dir === 'S');
 assert.ok('never' in passes(99999, -33.9, 151.2, from));
 
 console.log('ok');
+
+// Pluto's orbit is drawn as a J2000 ellipse; it must pass within 0.3 AU of its true position now.
+{
+  const { keplerSampler } = await import('./coords.ts');
+  const { BODIES } = await import('../data/solarSystem.ts');
+  const pl = BODIES.find((b) => b.id === 'pluto')!, h = HelioVector(Body.Pluto, new Date());
+  const p = eqjToScene(h.x, h.y, h.z), s = keplerSampler(pl.elements!);
+  let best = Infinity;
+  for (let i = 0; i < 20000; i++) best = Math.min(best, s(i / 20000).distanceTo(p));
+  assert.ok(best < 0.3, `Pluto ellipse misses by ${best.toFixed(3)} AU`);
+}

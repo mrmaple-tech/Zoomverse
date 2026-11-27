@@ -36,8 +36,14 @@ const pusher = (c: Cloud, bright: number) => (x: number, y: number, z: number, c
  * Star-forming (emission) nebula: turbulent gas as clumps within clumps, glowing teal near the hot
  * central stars and red further out, with dark dust clouds, an optional dust lane and dust pillars.
  */
-export function addEmission(c: Cloud, { count, radius: R, seed = 1, bright = 1, stars = 1, lane = 0, pillars = 0 }: {
+export function addEmission(c: Cloud, { count, radius: R, seed = 1, bright = 1, stars = 1, lane = 0, pillars = 0, hole = 0, spokes = 0, reflect = 0 }: {
   count: number; radius: number; seed?: number; bright?: number; stars?: number; lane?: number; pillars?: number;
+  /** Cavity blown out of the middle by its central cluster, as a fraction of the radius (the Rosette). */
+  hole?: number;
+  /** Dark dust lanes radiating from the center (the Trifid's three). */
+  spokes?: number;
+  /** A blue cloud of dust reflecting starlight beside the glowing gas (the Trifid's northern lobe). */
+  reflect?: number;
 }) {
   const r = rng(seed), push = pusher(c, bright);
   const blobs: number[][] = [];
@@ -55,6 +61,10 @@ export function addEmission(c: Cloud, { count, radius: R, seed = 1, bright = 1, 
     let s = 0;
     for (const [dx, dy, dr] of dust) s = Math.max(s, smooth(dr, dr * 0.4, Math.hypot(x - dx, y - dy)) * 0.85);
     if (lane) s = Math.max(s, smooth(R * 0.08, R * 0.02, Math.abs(y + 0.3 * x - R * 0.05)) * 0.9);
+    for (let k = 0; k < spokes; k++) {
+      const a = 0.4 + (k * TAU) / spokes, along = x * Math.cos(a) + y * Math.sin(a);
+      if (along > 0 && along < R * 0.75) s = Math.max(s, smooth(R * 0.11, R * 0.03, Math.abs(y * Math.cos(a) - x * Math.sin(a))) * 0.92);
+    }
     for (const p of towers) {
       const t = (y - p.y) / p.h;
       if (t > 0 && t < 1) { const w = width(p, t); s = Math.max(s, smooth(w, w * 0.55, Math.abs(x - p.x - p.lean * t * p.h)) * 0.95); }
@@ -63,7 +73,9 @@ export function addEmission(c: Cloud, { count, radius: R, seed = 1, bright = 1, 
   };
   for (let i = 0; i < count; i++) {
     const [bx, by, bz, s] = blobs[Math.floor(r() * blobs.length)];
-    const x = bx + gauss(r) * s * 0.7, y = by + gauss(r) * s * 0.7, z = bz + gauss(r) * s * 0.5;
+    let x = bx + gauss(r) * s * 0.7, y = by + gauss(r) * s * 0.7;
+    const z = bz + gauss(r) * s * 0.5;
+    if (hole) { const q = Math.hypot(x, y) || 1, k = (hole * R + q * (1 - hole)) / q; x *= k; y *= k; }
     const d = Math.hypot(x, y, z) / R;
     const col = mix(mix(OIII, HA, smooth(0.08, 0.55, d)), SII, r() < 0.15 ? 0.6 : 0);
     const wisp = ridged(x / R * 2.2 + seed, y / R * 2.2, z / R * 2.2) ** 4; // turbulent filaments and sheets
@@ -81,9 +93,15 @@ export function addEmission(c: Cloud, { count, radius: R, seed = 1, bright = 1, 
     const core = r() < 0.5, s = core ? R * 0.08 : R * 0.45;
     push(gauss(r) * s, gauss(r) * s, gauss(r) * s * 0.6, HOT, 0.6 + r() * 0.9, core && r() < 0.06 ? 3.5 : 1.3 + r());
   }
+  for (let i = 0; i < count * 0.25 * reflect; i++) {
+    const x = gauss(r) * R * 0.4, y = R * 0.95 + gauss(r) * R * 0.3, z = gauss(r) * R * 0.25;
+    push(x, y, z, [0.4, 0.55, 1], 0.05 * (0.4 + 1.6 * ridged(x / R * 2 + seed, y / R * 2, z / R * 2) ** 3), 3 + r() * 3);
+  }
   for (let i = 0; i < count * 0.05; i++) {
     const [bx, by, bz, s] = blobs[Math.floor(r() * 7) * 7];
-    const x = bx + gauss(r) * s * 0.6, y = by + gauss(r) * s * 0.6, d = Math.hypot(x, y) / R;
+    let x = bx + gauss(r) * s * 0.6, y = by + gauss(r) * s * 0.6;
+    if (hole) { const q = Math.hypot(x, y) || 1, k = (hole * R + q * (1 - hole)) / q; x *= k; y *= k; }
+    const d = Math.hypot(x, y) / R;
     push(x, y, bz + gauss(r) * s * 0.3, mix(OIII, HA, smooth(0.1, 0.5, d)), 0.03 * (1 - shade(x, y)), 10 + r() * 4);
   }
 }
@@ -127,28 +145,59 @@ export function addPlanetary(c: Cloud, { count, radius: R, seed = 1, bright = 1,
   for (let i = 0; i < 40; i++) push(gauss(r) * R * 0.01, gauss(r) * R * 0.01, gauss(r) * R * 0.01, HOT, 1.4, i ? 1.2 : 4); // white dwarf
 }
 
-/** Supernova remnant (Crab): a blue synchrotron glow laced with red and orange filaments, around a spinning pulsar. */
-export function addRemnant(c: Cloud, { count, radius: R, seed = 1, bright = 1 }: { count: number; radius: number; seed?: number; bright?: number }) {
-  const r = rng(seed), push = pusher(c, bright);
-  for (let i = 0; i < count * 0.3; i++)
+/**
+ * Supernova remnant (Crab): a blue synchrotron glow laced with red and orange filaments, around a spinning
+ * pulsar. With `shell`, an older blast wave instead: just a round shell of red and teal filaments (Veil, Cas A).
+ */
+export function addRemnant(c: Cloud, { count, radius: R, seed = 1, bright = 1, shell = 0 }: { count: number; radius: number; seed?: number; bright?: number; shell?: number }) {
+  const r = rng(seed), push = pusher(c, bright), q = shell ? 1 : 1.35;
+  for (let i = 0; i < count * 0.3 * (1 - shell); i++)
     push(gauss(r) * R * 0.32, gauss(r) * R * 0.24, gauss(r) * R * 0.24, [0.5, 0.62, 1], 0.12 + r() * 0.1, 3 + r() * 2.5);
   // filaments: wandering threads of gas from the inner cloud out to the edge
   const n = 450, per = Math.round((count * 0.65) / n);
   for (let f = 0; f < n; f++) {
     const z0 = r() * 2 - 1, p0 = r() * TAU, s0 = Math.sqrt(1 - z0 * z0);
-    let [x, y, z] = [s0 * Math.cos(p0) * 1.35, s0 * Math.sin(p0), z0].map((v) => v * R * (0.6 + 0.35 * r()));
-    const col = mix(SII, HA, r()), step = R * 0.005;
+    let [x, y, z] = [s0 * Math.cos(p0) * q, s0 * Math.sin(p0), z0].map((v) => v * R * (shell ? 0.8 + 0.15 * r() : 0.6 + 0.35 * r()));
+    const col = shell && r() < 0.45 ? OIII : mix(SII, HA, r()), step = R * 0.005;
     let [dx, dy, dz] = [x, y, z].map((v) => v / R);
     for (let i = 0; i < per; i++) {
       // wander mostly sideways, so threads trace the shell instead of shooting straight out
       dx += gauss(r) * 0.4; dy += gauss(r) * 0.4; dz += gauss(r) * 0.4;
       const l = Math.hypot(dx, dy, dz) || 1;
       x += (dx / l) * step; y += (dy / l) * step; z += (dz / l) * step;
-      if (Math.hypot(x / 1.35, y, z) > R) break;
+      if (Math.hypot(x / q, y, z) > R) break;
       // brightest toward the outer shell, where the filaments pile up
-      const out = smooth(0.4, 0.95, Math.hypot(x / 1.35, y, z) / R);
+      const out = smooth(0.4, 0.95, Math.hypot(x / q, y, z) / R);
       push(x + gauss(r) * step * 0.4, y + gauss(r) * step * 0.4, z, r() < 0.12 ? [0.7, 1, 0.45] : col, (0.06 + r() * 0.1) * (0.3 + out), 1 + r() * 0.6);
     }
   }
-  for (let i = 0; i < 30; i++) push(gauss(r) * R * 0.005, gauss(r) * R * 0.005, gauss(r) * R * 0.005, HOT, 1.5, i ? 1.2 : 3.5); // pulsar
+  if (!shell) for (let i = 0; i < 30; i++) push(gauss(r) * R * 0.005, gauss(r) * R * 0.005, gauss(r) * R * 0.005, HOT, 1.5, i ? 1.2 : 3.5); // pulsar
+}
+
+/**
+ * Star cluster. Open (Pleiades): a loose swarm of young blue-white stars wrapped in wisps of blue dust
+ * reflecting their light. Globular (M13): hundreds of thousands of old yellow stars piled into a dense ball,
+ * with orange giants and a few blue stragglers.
+ */
+export function addStarCluster(c: Cloud, { count, radius: R, seed = 1, bright = 1, globular = 0 }: { count: number; radius: number; seed?: number; bright?: number; globular?: number }) {
+  const r = rng(seed), push = pusher(c, bright);
+  if (globular) {
+    const rc = R * 0.07;
+    for (let i = 0; i < count * 0.6; i++) {
+      const u = r() * 0.995, d = Math.min(R, rc * Math.sqrt(u / (1 - u))), [x, y, z] = unitVec(r), k = r();
+      const [col, b, size]: [RGB, number, number] = k < 0.01 ? [[1, 0.62, 0.32], 1.1, 2.4] : k < 0.014 ? [HOT, 0.9, 1.8] : [[1, 0.88, 0.68], 0.25 + r() * 0.3, 1 + r() * 0.6];
+      push(x * d, y * d, z * d, col, b * (1 - 0.6 * (d / R) ** 2) * (0.05 + 0.95 * Math.min(1, d / (rc * 4)) ** 1.3), size);
+    }
+    for (let i = 0; i < count * 0.002; i++) { const [x, y, z] = unitVec(r), d = Math.abs(gauss(r)) * R * 0.15; push(x * d, y * d, z * d, [1, 0.85, 0.6], 0.025, 10 + r() * 4); }
+    return;
+  }
+  // its nine brilliant B stars (the sisters and their parents), then hundreds of fainter members
+  const sisters = Array.from({ length: 9 }, () => [gauss(r) * R * 0.18, gauss(r) * R * 0.14, gauss(r) * R * 0.15]);
+  for (const [x, y, z] of sisters) push(x, y, z, [0.72, 0.84, 1], 2, 5 + r() * 2);
+  for (let i = 0; i < count * 0.006; i++)
+    push(gauss(r) * R * 0.35, gauss(r) * R * 0.35, gauss(r) * R * 0.35, mix(HOT, [1, 0.85, 0.65], r()), 0.25 + r() * 0.5, 1.1 + r() * 0.8);
+  for (let i = 0; i < count * 0.3; i++) {
+    const [sx, sy, sz] = sisters[Math.floor(r() * 9)], x = sx + gauss(r) * R * 0.12, y = sy + gauss(r) * R * 0.12, z = sz + gauss(r) * R * 0.06;
+    push(x, y, z, [0.42, 0.58, 1], 0.035 * (0.15 + 2 * ridged(x / R * 3 + seed, y / R * 10, z / R * 3) ** 4), 3 + r() * 3); // streaky, like the real dust
+  }
 }

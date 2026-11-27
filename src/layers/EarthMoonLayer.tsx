@@ -40,7 +40,7 @@ export function EarthMoonLayer() {
   const [day, night, clouds, spec, normal] = useTexture(TEXTURES);
   // color maps are sRGB; clouds/spec/normal are data and stay linear
   [day, night].forEach((t) => (t.colorSpace = SRGBColorSpace));
-  [day, clouds].forEach((t) => (t.anisotropy = Math.min(8, maxAniso))); // sharp near the limb
+  [day, night, clouds, normal].forEach((t) => (t.anisotropy = Math.min(8, maxAniso))); // sharp near the limb
   // the clouds drift east forever, so their texture must wrap around the globe: clamped (the default),
   // once the drift passed the texture's edge it smeared the edge pixels into streaks across Earth
   clouds.wrapS = RepeatWrapping;

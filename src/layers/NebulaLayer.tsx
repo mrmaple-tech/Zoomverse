@@ -27,7 +27,7 @@ function NebulaView({ n, seed }: { n: Nebula; seed: number }) {
       coarse={recipe(n, seed, 4000, 2.5)}
       fine={recipe(n, seed, n.shape === 'emission' ? 140_000 : 90_000, 1)}
       size={[n.sizePc * 0.012, n.sizePc * 0.004]}
-      glow={{ size: n.sizePc * 1.2, color: n.shape === 'planetary' ? '#7fe0e0' : '#ff7a9a' }}
+      glow={{ size: n.sizePc * 1.2, color: n.shape === 'planetary' ? '#7fe0e0' : n.shape !== 'starcluster' ? '#ff7a9a' : n.opts?.globular ? '#ffe2bd' : '#9fc0ff' }}
     />
   );
 }

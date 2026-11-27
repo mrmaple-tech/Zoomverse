@@ -6,7 +6,7 @@ import type { Fade } from '../data/layers.ts';
 import { galDir } from '../lib/coords.ts';
 import { gauss, rng } from '../lib/random.ts';
 import { Inspectable } from '../scene/Inspectable.tsx';
-import { clock } from '../scene/materials.ts';
+import { clock, pxRatio } from '../scene/materials.ts';
 import type { CloudStep } from '../scene/useCloud.ts';
 
 const CLUSTER = (count: number, bright: number): CloudStep[] => [{ gen: 'cluster', opts: { count, radius: NORMA.sizeMpc / 2, seed: 72, bright, jellyfish: 1 } }];
@@ -15,7 +15,7 @@ const CLUSTER = (count: number, bright: number): CloudStep[] => [{ gen: 'cluster
 function flowMaterial() {
   return new ShaderMaterial({
     transparent: true, depthWrite: false, blending: AdditiveBlending,
-    uniforms: { uTime: clock, uOpacity: { value: 1 }, uPx: { value: Math.min(devicePixelRatio, 2) } },
+    uniforms: { uTime: clock, uOpacity: { value: 1 }, uPx: pxRatio },
     vertexShader: /* glsl */ `
       attribute float aPhase; uniform float uTime, uPx; varying float vA;
       void main() {

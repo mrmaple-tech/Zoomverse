@@ -16,13 +16,14 @@ const Z = new Vector3(0, 0, 1), UP = new Vector3(0, 1, 0);
 // Point size as a fraction of galaxy diameter: ~2–3 px when zoomed in on one, sub-pixel and dimmed from afar.
 const POINT = 0.004, POINT_DETAIL = 0.0016;
 /** Shown within these zooms; each galaxy also stays shown while you're focused on it. */
-const SHOWN: Record<Galaxy['zone'], Fade> = { local: LAYER.fade, mc: LAYER.fade, m31: LAYER.fade, far: [22.0, 22.8, 25.4, 26.0], deep: [23.0, 23.8, 25.8, 26.4] };
+const SHOWN: Record<Galaxy['zone'], Fade> = { local: LAYER.fade, mc: LAYER.fade, m31: LAYER.fade, far: [22.0, 22.8, 25.4, 26.0], deep: [23.0, 23.8, 25.8, 26.4], edge: [24.8, 25.6, Infinity, Infinity] };
 const LABEL: Record<Galaxy['zone'], Fade> = {
   local: LAYER.fade,
   mc: [21.0, 21.6, 22.2, 22.5], // the Magellanic Clouds crowd the Milky Way when zoomed out
   m31: [20.4, 20.9, 21.6, 21.9], // Andromeda's satellites, only when looking at Andromeda
   far: [22.6, 23.0, 24.0, 24.5],
   deep: [23.8, 24.2, 25.0, 25.5], // hundreds of millions of light-years out
+  edge: [25.7, 26.1, 26.9, Infinity], // billions: near the edge of the observable universe
 };
 
 const recipe = (g: Galaxy, seed: number, count: number, bright: number): CloudStep[] =>

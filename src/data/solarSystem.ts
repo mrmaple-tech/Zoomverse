@@ -22,6 +22,9 @@ export interface SolarBody {
   look?: Look;
   /** Orbital period in days (for drawing the orbit line). */
   periodDays: number;
+  /** J2000 ecliptic elements [a AU, e, i°, node°, perihelion longitude°]: draws the orbit as an ellipse
+   * instead of sampling the ephemeris (Pluto's is integrated numerically, ~90 ms for a full orbit). */
+  elements?: [number, number, number, number, number];
   layer: 1 | 2 | 3;
   fade: Fade;
   fact: string;
@@ -56,7 +59,7 @@ export const BODIES: SolarBody[] = [
     fact: 'Uranus rolls around the Sun on its side, tilted 98°.' },
   { id: 'neptune', name: 'Neptune', body: Body.Neptune, type: 'Ice giant', radiusKm: 24_622, look: { colors: ['#2a4fc0', '#6a95ee', '#16307a'], bands: 13, turb: 2.5, rim: 0.8 }, periodDays: 60_182, layer: 3, fade: OUTER,
     fact: 'Neptune has the fastest winds measured in the solar system, over 2,000 km/h.' },
-  { id: 'pluto', name: 'Pluto', body: Body.Pluto, type: 'Dwarf planet', radiusKm: 1188.3, look: { colors: ['#7d6650', '#e6d5bc', '#4f3d2e'], bands: 0, turb: 0, rim: 0.1 }, periodDays: 90_560, layer: 3, fade: OUTER,
+  { id: 'pluto', name: 'Pluto', body: Body.Pluto, type: 'Dwarf planet', radiusKm: 1188.3, look: { colors: ['#7d6650', '#e6d5bc', '#4f3d2e'], bands: 0, turb: 0, rim: 0.1 }, periodDays: 90_560, elements: [39.482, 0.2488, 17.14, 110.3, 224.07], layer: 3, fade: OUTER,
     fact: 'Pluto has a giant heart-shaped region, Tombaugh Regio; its left half is a vast glacier of nitrogen ice called Sputnik Planitia.' },
 ];
 

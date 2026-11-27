@@ -6,7 +6,7 @@ import { WebGLRenderTarget, type Group, type Material, type Mesh, type Object3D 
 import { AU, KPC, MPC, PC, eqjToScene } from '../lib/coords.ts';
 import { get } from '../catalog.ts';
 import { simDate, useStore } from '../store.ts';
-import { clock, sunWorld } from './materials.ts';
+import { clock, pxRatio, sunWorld } from './materials.ts';
 import { Rig } from './Rig.tsx';
 import { MOBILE } from '../lib/device.ts';
 import { K, Space } from './Space.tsx';
@@ -120,8 +120,9 @@ export function Universe() {
     setDpr(DPR[n]);
     return n;
   });
-  useFrame((_, dt) => {
+  useFrame(({ gl }, dt) => {
     const { focus, logD } = useStore.getState();
+    pxRatio.value = gl.getPixelRatio();
     sunWorld.value.copy(focus).multiplyScalar(-K / 10 ** logD); // the Sun is the world origin
     clock.value += dt;
   });

@@ -11,7 +11,7 @@ export const pointsMaterial = (opacity = 1) =>
     transparent: true,
     depthWrite: false,
     blending: AdditiveBlending,
-    uniforms: { uOpacity: { value: opacity }, uDays: { value: 0 }, uPx: { value: Math.min(devicePixelRatio, 2) }, uWorld: { value: 0 }, uHalfH: { value: 400 } },
+    uniforms: { uOpacity: { value: opacity }, uDays: { value: 0 }, uPx: pxRatio, uWorld: { value: 0 }, uHalfH: { value: 400 } },
     vertexShader: /* glsl */ `
       attribute vec3 color; attribute float size; attribute float aSpeed;
       uniform float uDays, uPx, uWorld, uHalfH;
@@ -139,6 +139,8 @@ export const shellMaterial = (color: string, opacity: number) =>
 /** World-space Sun position, shared by every lit shader; updated once per frame in Universe. */
 export const sunWorld = { value: new Vector3() };
 export const clock = { value: 0 };
+/** The renderer's current pixel ratio (it drops on slow GPUs), so pixel-sized points keep their on-screen size. */
+export const pxRatio = { value: Math.min(devicePixelRatio, 2) };
 
 const NOISE = /* glsl */ `
   float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
@@ -261,12 +263,12 @@ let glow: CanvasTexture | undefined;
 export function glowTexture() {
   if (glow) return glow;
   const c = document.createElement('canvas');
-  c.width = c.height = 128;
+  c.width = c.height = 256; // galaxy halos fill much of the screen; 128 showed stepped rings when magnified
   const g = c.getContext('2d')!;
-  const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
   [[0, 1], [0.12, 0.55], [0.35, 0.14], [0.7, 0.03], [1, 0]].forEach(([o, a]) => r.addColorStop(o, `rgba(255,255,255,${a})`));
   g.fillStyle = r;
-  g.fillRect(0, 0, 128, 128);
+  g.fillRect(0, 0, 256, 256);
   return (glow = new CanvasTexture(c));
 }
 

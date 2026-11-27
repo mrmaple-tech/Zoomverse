@@ -12,8 +12,8 @@ export interface Galaxy {
   incl: number; pa: number;
   /** Extra generator options (arms, pitch, bulge, dust lane, jet…), see scene/galaxy.ts. */
   opts?: Record<string, number>;
-  /** Which zoom range labels it: Local Group giants, the Magellanic Clouds, Andromeda's moons, or beyond. */
-  zone: 'local' | 'mc' | 'm31' | 'far' | 'deep';
+  /** Which zoom range labels it: Local Group giants, the Magellanic Clouds, Andromeda's moons, beyond, or near the edge of time. */
+  zone: 'local' | 'mc' | 'm31' | 'far' | 'deep' | 'edge';
   fact: string;
 }
 
@@ -100,6 +100,36 @@ export const GALAXIES: Galaxy[] = [
   { id: 'hoags-object', name: 'Hoag\'s Object', type: 'Ring galaxy', l: 31.52, b: 56.45, distKpc: 187000, diameterKpc: 37, shape: 'ring', incl: 15, pa: 0,
     opts: { ringR: 0.78, ringW: 0.05, core: 0.25, coreR: 0.18 }, zone: 'deep',
     fact: 'A nearly perfect ring of blue stars around a yellow core, with an empty gap between. How it formed is still debated.' },
+  { id: 'barnards-galaxy', name: 'Barnard\'s Galaxy (NGC 6822)', type: 'Barred irregular dwarf galaxy', l: 25.35, b: -18.39, distKpc: 500, diameterKpc: 2.1, shape: 'irregular', incl: 60, pa: 10,
+    opts: { stretch: 1.6 }, zone: 'local',
+    fact: 'A small Local Group galaxy found by E. E. Barnard in 1884. In 1925 Edwin Hubble measured the pulsing stars in it and showed that it lies far beyond the Milky Way.' },
+  { id: 'ic-1613', name: 'IC 1613', type: 'Irregular dwarf galaxy', l: 129.74, b: -60.58, distKpc: 730, diameterKpc: 3.2, shape: 'irregular', incl: 40, pa: 60,
+    opts: { stretch: 1.2 }, zone: 'local',
+    fact: 'A faint dwarf galaxy with almost no dust in or in front of it, which gives astronomers one of the clearest views of the stars of another galaxy.' },
+  { id: 'ic-342', name: 'Hidden Galaxy (IC 342)', type: 'Spiral galaxy', l: 138.17, b: 10.58, distKpc: 3300, diameterKpc: 23, shape: 'spiral', incl: 31, pa: 150,
+    opts: { arms: 4, pitchDeg: 18, bulge: 0.06 }, zone: 'far',
+    fact: 'One of the brightest galaxies near us, but it lies behind the dusty disk of the Milky Way, which dims and reddens it: hence its nickname.' },
+  { id: 'phantom', name: 'Phantom Galaxy (M74)', type: 'Grand-design spiral galaxy', l: 138.62, b: -45.71, distKpc: 9800, diameterKpc: 29, shape: 'spiral', incl: 7, pa: 25,
+    opts: { arms: 2, pitchDeg: 14, bulge: 0.07 }, zone: 'far',
+    fact: 'A nearly perfect spiral seen face-on. The James Webb Space Telescope\'s 2022 infrared image of it revealed a web of glowing dust filaments along its arms.' },
+  { id: 'm77', name: 'M77 (Cetus A)', type: 'Barred spiral with an active core', l: 172.07, b: -51.91, distKpc: 14000, diameterKpc: 30, shape: 'spiral', incl: 40, pa: 70,
+    opts: { arms: 2, pitchDeg: 12, bulge: 0.22, bulgeSize: 0.07, bar: 0.1 }, zone: 'far',
+    fact: 'In 1943 Carl Seyfert picked it out as a galaxy with a blazing, star-like core. Such "Seyfert galaxies" turned out to be powered by gas falling into a central black hole.' },
+  { id: 'needle', name: 'Needle Galaxy (NGC 4565)', type: 'Edge-on spiral galaxy', l: 230.75, b: 86.44, distKpc: 12000, diameterKpc: 50, shape: 'spiral', incl: 89, pa: 135,
+    opts: { arms: 2, pitchDeg: 12, bulge: 0.12, lane: 2 }, zone: 'far',
+    fact: 'One of the most famous edge-on spirals: seen exactly side-on, its thin disk and dark lane of dust stretch across the sky like a needle.' },
+  { id: 'ngc-1365', name: 'Great Barred Spiral (NGC 1365)', type: 'Barred spiral galaxy', l: 237.96, b: -54.6, distKpc: 17500, diameterKpc: 61, shape: 'spiral', incl: 40, pa: 30,
+    opts: { arms: 2, pitchDeg: 16, bulge: 0.05, bar: 0.45 }, zone: 'far',
+    fact: 'About 200,000 light-years across, with a huge straight bar of stars that channels gas inward, feeding star birth and its active central black hole.' },
+  { id: 'mice', name: 'Mice Galaxies (NGC 4676)', type: 'Colliding galaxies', l: 140.36, b: 86.22, distKpc: 90000, diameterKpc: 90, shape: 'merger', incl: 50, pa: 170,
+    zone: 'deep',
+    fact: 'Two spiral galaxies in the middle of merging, each trailing a long tail of stars pulled out by the other\'s gravity. They will most likely end up as one galaxy.' },
+  { id: 'malin-1', name: 'Malin 1', type: 'Giant low-brightness spiral galaxy', l: 287.47, b: 76.77, distKpc: 366000, diameterKpc: 200, shape: 'spiral', incl: 38, pa: 40,
+    opts: { arms: 4, pitchDeg: 18, bulge: 0.18, bulgeSize: 0.04 }, zone: 'deep',
+    fact: 'One of the largest spiral galaxies known, about 650,000 light-years across, more than six times the Milky Way. Its vast disk is so faint that it went unnoticed until 1986.' },
+  { id: 'jades-z14', name: 'JADES-GS-z14-0', type: 'Early galaxy', l: 223.65, b: -54.47, distKpc: 9_960_000, diameterKpc: 0.5, shape: 'irregular', incl: 30, pa: 0,
+    opts: { stretch: 1.3 }, zone: 'edge',
+    fact: 'One of the most distant galaxies known, found by the James Webb Space Telescope in 2024. We see it as it was about 290 million years after the Big Bang; the expansion of space has since carried it about 32 billion light-years away.' },
 ];
 
 export interface Nebula {
@@ -109,8 +139,10 @@ export interface Nebula {
   /** Right ascension (hours), declination (deg), distance (pc). */
   ra: number; dec: number; distPc: number;
   sizePc: number;
-  shape: 'emission' | 'planetary' | 'remnant';
+  shape: 'emission' | 'planetary' | 'remnant' | 'starcluster';
   opts?: Record<string, number>;
+  /** Galaxy it lies in, when not the Milky Way: that galaxy stays shown around it. */
+  host?: string;
   fact: string;
 }
 
@@ -131,6 +163,24 @@ export const NEBULAE: Nebula[] = [
     fact: 'The closest bright planetary nebula, nicknamed the Eye of God. Our Sun will end up looking like this in about 5 billion years.' },
   { id: 'cats-eye-nebula', name: 'Cat\'s Eye Nebula', type: 'Planetary nebula', ra: 17.976, dec: 66.633, distPc: 1000, sizePc: 0.2, shape: 'planetary', opts: { axis: 0.55, shells: 1 },
     fact: 'One of the most intricate nebulae known: its dying star has puffed off a new shell of gas about every 1,500 years.' },
+  { id: 'rosette-nebula', name: 'Rosette Nebula', type: 'Star-forming nebula', ra: 6.5625, dec: 4.998, distPc: 1600, sizePc: 40, shape: 'emission', opts: { hole: 0.35, stars: 0.6 },
+    fact: 'A rose of glowing gas about 130 light-years across. Winds and light from the young star cluster at its heart, NGC 2244, have blown a hole in its middle.' },
+  { id: 'trifid-nebula', name: 'Trifid Nebula', type: 'Star-forming nebula', ra: 18.0397, dec: -23.03, distPc: 1250, sizePc: 12, shape: 'emission', opts: { spokes: 3, reflect: 1 },
+    fact: 'Dark lanes of dust split its glowing red heart into three lobes (the "trifid" of its name). Beside it, a blue cloud of dust reflects the light of nearby stars.' },
+  { id: 'tarantula-nebula', name: 'Tarantula Nebula', type: 'Star-forming nebula', ra: 5.644, dec: -69.095, distPc: 50000, sizePc: 200, shape: 'emission', opts: { stars: 2.5 }, host: 'lmc',
+    fact: 'The biggest, brightest star nursery in our galactic neighborhood, in the Large Magellanic Cloud. Its central cluster, R136, holds the most massive stars known, around 200 times the Sun\'s mass.' },
+  { id: 'veil-nebula', name: 'Veil Nebula', type: 'Supernova remnant', ra: 20.761, dec: 30.708, distPc: 735, sizePc: 36, shape: 'remnant', opts: { shell: 1 },
+    fact: 'The shattered shell of a star that exploded roughly 10,000 to 20,000 years ago, now a lacy loop of glowing filaments over 100 light-years across.' },
+  { id: 'cassiopeia-a', name: 'Cassiopeia A', type: 'Supernova remnant', ra: 23.39, dec: 58.815, distPc: 3400, sizePc: 4.5, shape: 'remnant', opts: { shell: 1 },
+    fact: 'Light from this star\'s explosion reached Earth around 1680, yet nobody clearly recorded it. Today it is the brightest radio source in the sky beyond the solar system.' },
+  { id: 'dumbbell-nebula', name: 'Dumbbell Nebula', type: 'Planetary nebula', ra: 19.993, dec: 22.721, distPc: 400, sizePc: 0.9, shape: 'planetary', opts: { axis: 0.7 },
+    fact: 'The first planetary nebula ever discovered, found by Charles Messier in 1764: the glowing gas a dying star has shed.' },
+  { id: 'pleiades', name: 'Pleiades (Seven Sisters)', type: 'Open star cluster', ra: 3.79, dec: 24.117, distPc: 136, sizePc: 5, shape: 'starcluster',
+    fact: 'More than 1,000 young stars born together about 100 million years ago. The blue haze around its brightest stars is a passing cloud of dust reflecting their light.' },
+  { id: 'm13', name: 'Hercules Cluster (M13)', type: 'Globular star cluster', ra: 16.695, dec: 36.46, distPc: 7100, sizePc: 42, shape: 'starcluster', opts: { globular: 1 },
+    fact: 'Several hundred thousand old stars packed into a ball about 145 light-years across. In 1974 the Arecibo radio telescope beamed a message toward it, which will take over 20,000 years to arrive.' },
+  { id: '47-tucanae', name: '47 Tucanae', type: 'Globular star cluster', ra: 0.4015, dec: -72.08, distPc: 4450, sizePc: 37, shape: 'starcluster', opts: { globular: 1 },
+    fact: 'The second-brightest globular cluster in the sky. Its crowded core holds more than two dozen millisecond pulsars: dead stars spun up to hundreds of turns a second.' },
 ];
 
 /** The group's center of mass sits roughly midway between its two giants. */
@@ -153,6 +203,10 @@ export const STRUCTURES: Structure[] = [
     fact: 'About 1,300 galaxies; its gravity is slowly pulling the Local Group toward it.' },
   { id: 'coma-cluster', name: 'Coma Cluster', type: 'Galaxy cluster', l: 58.1, b: 87.96, distMpc: 99, sizeMpc: 6,
     fact: 'Fritz Zwicky first inferred dark matter in 1933 from how fast its galaxies move.' },
+  { id: 'fornax-cluster', name: 'Fornax Cluster', type: 'Galaxy cluster', l: 236.7, b: -53.6, distMpc: 19, sizeMpc: 1.4,
+    fact: 'The second-richest galaxy cluster within 100 million light-years, after Virgo: a compact swarm of dozens of big galaxies around the giant elliptical NGC 1399.' },
+  { id: 'bullet-cluster', name: 'Bullet Cluster', type: 'Colliding galaxy clusters', l: 266.03, b: -21.23, distMpc: 1210, sizeMpc: 2,
+    fact: 'Two galaxy clusters that smashed through each other. Their hot gas was slowed and left behind in the middle, while most of their mass, mapped by how it bends light, sailed on: strong evidence for dark matter.' },
   { id: 'bootes-void', name: 'Boötes Void', type: 'Cosmic void', l: 80, b: 60, distMpc: 210, sizeMpc: 100,
     fact: 'A near-empty sphere ~330 million light-years across with only about 60 galaxies.' },
 ];

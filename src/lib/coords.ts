@@ -61,3 +61,15 @@ export function fade(logD: number, [a, b, c, d]: readonly [number, number, numbe
   return (b > a ? ss(a, b, logD) : logD >= b ? 1 : 0) * (d > c ? 1 - ss(c, d, logD) : logD <= c ? 1 : 0);
 }
 
+/** Fixed Keplerian ellipse from J2000 ecliptic elements, in AU (sampled evenly in eccentric anomaly). */
+export function keplerSampler([a, e, i, node, peri]: [number, number, number, number, number]) {
+  const D = Math.PI / 180, w = (peri - node) * D, O = node * D, I = i * D, b = a * Math.sqrt(1 - e * e);
+  const [cw, sw, cO, sO, cI, sI] = [Math.cos(w), Math.sin(w), Math.cos(O), Math.sin(O), Math.cos(I), Math.sin(I)];
+  return (f: number) => {
+    const x = a * (Math.cos(f * 2 * Math.PI) - e), y = b * Math.sin(f * 2 * Math.PI);
+    return eclToScene(
+      (cw * cO - sw * sO * cI) * x + (-sw * cO - cw * sO * cI) * y,
+      (cw * sO + sw * cO * cI) * x + (-sw * sO + cw * cO * cI) * y,
+      sw * sI * x + cw * sI * y);
+  };
+}

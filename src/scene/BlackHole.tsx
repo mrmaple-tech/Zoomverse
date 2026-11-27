@@ -18,7 +18,7 @@ import { MAX_STEPS, STEP } from '../lib/geodesic.ts';
 import { starColor } from '../lib/stars.ts';
 import { useStore } from '../store.ts';
 import { Label } from './Label.tsx';
-import { pointsMaterial, starSurface } from './materials.ts';
+import { pointsMaterial, pxRatio, starSurface } from './materials.ts';
 import { Glow } from './Glow.tsx';
 import { MOBILE } from '../lib/device.ts';
 import { cloud } from './PointCloud.tsx';
@@ -226,7 +226,7 @@ const jetMaterial = (strength: number, time: { value: number }) => new ShaderMat
 /** Gas pulled off the companion at the point between the two, trailing as it spirals down to the disk's rim. */
 const streamMaterial = (time: { value: number }) => new ShaderMaterial({
   transparent: true, depthWrite: false, blending: AdditiveBlending,
-  uniforms: { uTime: time, uTheta: { value: 0 }, uD: { value: 1 }, uRout: { value: 10 }, uOpacity: { value: 1 }, uPx: { value: Math.min(devicePixelRatio, 2) } },
+  uniforms: { uTime: time, uTheta: { value: 0 }, uD: { value: 1 }, uRout: { value: 10 }, uOpacity: { value: 1 }, uPx: pxRatio },
   vertexShader: /* glsl */ `
     attribute float aS; attribute vec2 aJit; uniform float uTime, uTheta, uD, uRout, uPx; varying float vA; varying float vS;
     void main() {

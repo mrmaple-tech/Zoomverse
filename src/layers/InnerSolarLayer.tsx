@@ -1,7 +1,7 @@
 import { useMemo, useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
-import { AU } from '../lib/coords.ts';
+import { AU, keplerSampler } from '../lib/coords.ts';
 import { simDate, useStore } from '../store.ts';
 import { swallowedTo } from '../scene/Events.tsx';
 import { get } from '../catalog.ts';
@@ -35,7 +35,7 @@ export function Planet({ b, children }: { b: SolarBody; children?: ReactNode }) 
 export function Orbits({ layer, fade }: { layer: number; fade: typeof LAYER.fade }) {
   const samplers = useMemo(() => {
     const now = Date.now();
-    return BODIES.filter((b) => b.layer === layer || (layer === 2 && b.id === 'earth')).map((b) => planetSampler(get(b.id).pos, b.periodDays, now));
+    return BODIES.filter((b) => b.layer === layer || (layer === 2 && b.id === 'earth')).map((b) => b.elements ? keplerSampler(b.elements) : planetSampler(get(b.id).pos, b.periodDays, now));
   }, [layer]);
   return <Fader window={fade}>{samplers.map((s, i) => <Orbit key={i} sample={s} />)}</Fader>;
 }
