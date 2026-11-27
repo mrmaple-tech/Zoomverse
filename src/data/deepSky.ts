@@ -30,13 +30,13 @@ export const SGR_A = {
   /** Radius of the event horizon. */
   horizonKm: 12.7e6,
   size: 'Event horizon 25 million km across, 18 Suns wide',
-  fact: 'Four million Suns of mass, at the center of our galaxy. Its gravity bends light: the far side of its glowing disk appears arched over the top and bottom of its shadow, and the side spinning toward you shines brightest. Gas at the inner edge circles at half the speed of light, once every 30 minutes (sped up here).',
+  fact: 'Four million Suns of mass, at the center of our galaxy. Its gravity bends light: the far side of its glowing disk appears arched over the top and bottom of its shadow, and the side spinning toward you shines brightest. Hot spots near its inner edge circle at about 30% of the speed of light, roughly once every 45 minutes (sped up here).',
 };
 
 export const GALAXIES: Galaxy[] = [
   { id: 'andromeda', name: 'Andromeda (M31)', type: 'Spiral galaxy', l: 121.17, b: -21.57, distKpc: 765, diameterKpc: 46, shape: 'spiral', incl: 77, pa: 38,
     opts: { arms: 2, pitchDeg: 9, bulge: 0.14 }, zone: 'local',
-    fact: 'Andromeda is heading toward us at ~110 km/s and will merge with the Milky Way in about 4.5 billion years.' },
+    fact: 'Andromeda is heading toward us at ~110 km/s. The classic forecast has it merging with the Milky Way in about 4.5 billion years, but a 2025 study puts the odds of a merger within 10 billion years near 50/50.' },
   { id: 'triangulum', name: 'Triangulum (M33)', type: 'Spiral galaxy', l: 133.61, b: -31.33, distKpc: 840, diameterKpc: 18.7, shape: 'spiral', incl: 55, pa: 23,
     opts: { arms: 4, pitchDeg: 20, bulge: 0.03 }, zone: 'local',
     fact: 'Under very dark skies, Triangulum is the most distant object most people can see with the naked eye.' },
@@ -78,7 +78,7 @@ export const GALAXIES: Galaxy[] = [
     fact: 'One of the dustiest galaxies known, forming stars so fast that its core is packed with young star clusters.' },
   { id: 'southern-pinwheel', name: 'Southern Pinwheel (M83)', type: 'Barred spiral galaxy', l: 314.58, b: 31.97, distKpc: 4600, diameterKpc: 17, shape: 'spiral', incl: 24, pa: 45,
     opts: { arms: 3, pitchDeg: 20, bulge: 0.06, bar: 0.22 }, zone: 'far',
-    fact: 'Six supernovae have been spotted in it in the last century, among the most of any galaxy.' },
+    fact: 'Six supernovae were spotted in it during the 20th century, among the most of any galaxy.' },
   { id: 'black-eye', name: 'Black Eye Galaxy (M64)', type: 'Spiral galaxy', l: 315.69, b: 84.42, distKpc: 5300, diameterKpc: 16, shape: 'spiral', incl: 60, pa: 110,
     opts: { arms: 2, pitchDeg: 8, bulge: 0.2, eye: 1 }, zone: 'far',
     fact: 'A dark band of dust in front of its bright core gives it the look of a black eye. Its outer gas spins the opposite way to its inner stars.' },

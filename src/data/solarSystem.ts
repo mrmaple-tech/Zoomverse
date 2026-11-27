@@ -57,7 +57,7 @@ export const BODIES: SolarBody[] = [
   { id: 'neptune', name: 'Neptune', body: Body.Neptune, type: 'Ice giant', radiusKm: 24_622, look: { colors: ['#2a4fc0', '#6a95ee', '#16307a'], bands: 13, turb: 2.5, rim: 0.8 }, periodDays: 60_182, layer: 3, fade: OUTER,
     fact: 'Neptune has the fastest winds measured in the solar system, over 2,000 km/h.' },
   { id: 'pluto', name: 'Pluto', body: Body.Pluto, type: 'Dwarf planet', radiusKm: 1188.3, look: { colors: ['#7d6650', '#e6d5bc', '#4f3d2e'], bands: 0, turb: 0, rim: 0.1 }, periodDays: 90_560, layer: 3, fade: OUTER,
-    fact: 'Pluto has a heart-shaped glacier of nitrogen ice called Tombaugh Regio.' },
+    fact: 'Pluto has a giant heart-shaped region, Tombaugh Regio; its left half is a vast glacier of nitrogen ice called Sputnik Planitia.' },
 ];
 
 /** Saturn's north pole (RA h, Dec °) for orienting its rings. */

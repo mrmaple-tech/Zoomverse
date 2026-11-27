@@ -36,7 +36,7 @@ const UNIVERSE: TourStop[] = [
   { focus: 'sgr-a', title: 'The black hole at the center', hold: 9,
     text: 'Sagittarius A*: four million Suns of mass in a space smaller than Mercury\'s orbit. Its gravity bends light, so the far side of its glowing disk appears wrapped over the top.' },
   { focus: 'local-group', logD: 22.75, viewGal: [150, 35], title: 'The Local Group', hold: 7,
-    text: 'Andromeda, 2.5 million light-years away, is falling toward us. The two galaxies will merge in about 4.5 billion years.' },
+    text: 'Andromeda, 2.5 million light-years away, is falling toward us. They may merge in a few billion years, though newer measurements make it closer to a coin flip.' },
   { focus: 'milky-way', logD: 25.2, title: 'The cosmic web', hold: 7,
     text: 'Galaxies gather along vast filaments around empty voids. Every speck here is a galaxy.' },
   { focus: 'observable-universe', title: 'The edge of what we can see', hold: 8,

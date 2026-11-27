@@ -22,7 +22,7 @@ export const MOMENTS: Moment[] = [
   { label: 'Total solar eclipse, North America', date: '2024-04-08T18:17:00Z', focus: 'earth', logD: 8.95,
     note: 'The Moon passed directly between the Sun and Earth, darkening a path from Mexico to Canada.' },
   { label: 'Total solar eclipse, Egypt', date: '2027-08-02T10:07:00Z', focus: 'earth', logD: 8.95,
-    note: 'The longest total eclipse on land this century: over six minutes of darkness near Luxor.' },
+    note: 'One of the longest total eclipses of the century: over six minutes of darkness near Luxor.' },
   { label: 'Planets gather at dusk', date: '2040-09-08T18:00:00Z', focus: 'earth', logD: 12.3,
     note: 'Mercury, Venus, Mars, Jupiter and Saturn crowd into one small patch of the evening sky.' },
 ];
