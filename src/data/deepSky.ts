@@ -181,6 +181,20 @@ export const NEBULAE: Nebula[] = [
     fact: 'Several hundred thousand old stars packed into a ball about 145 light-years across. In 1974 the Arecibo radio telescope beamed a message toward it, which will take over 20,000 years to arrive.' },
   { id: '47-tucanae', name: '47 Tucanae', type: 'Globular star cluster', ra: 0.4015, dec: -72.08, distPc: 4450, sizePc: 37, shape: 'starcluster', opts: { globular: 1 },
     fact: 'The second-brightest globular cluster in the sky. Its crowded core holds more than two dozen millisecond pulsars: dead stars spun up to hundreds of turns a second.' },
+  { id: 'north-america-nebula', name: 'North America Nebula', type: 'Star-forming nebula', ra: 20.988, dec: 44.52, distPc: 795, sizePc: 30, shape: 'emission', opts: { lane: 1 },
+    fact: 'Named for its outline, which looks like the continent of North America. A dark cloud of dust in front of it carves out the "Gulf of Mexico".' },
+  { id: 'heart-nebula', name: 'Heart Nebula', type: 'Star-forming nebula', ra: 2.556, dec: 61.443, distPc: 2300, sizePc: 60, shape: 'emission', opts: { hole: 0.3, stars: 0.8 },
+    fact: 'A heart of glowing gas about 200 light-years across, hollowed out by the young star cluster Melotte 15 at its center.' },
+  { id: 'omega-nebula', name: 'Omega Nebula (M17)', type: 'Star-forming nebula', ra: 18.341, dec: -16.177, distPc: 1700, sizePc: 12, shape: 'emission', opts: { stars: 1.5, lane: 1 },
+    fact: 'One of the brightest and most massive star nurseries in our galaxy, also called the Swan Nebula for the glowing bar of gas that looks like a swan\'s neck.' },
+  { id: 'bubble-nebula', name: 'Bubble Nebula', type: 'Wind-blown bubble', ra: 23.3467, dec: 61.2017, distPc: 2700, sizePc: 2.1, shape: 'planetary', opts: { axis: 0.95 },
+    fact: 'A bubble about 7 light-years across, blown into the surrounding gas by the fierce wind of a single massive star, dozens of times the Sun\'s mass.' },
+  { id: 'southern-ring-nebula', name: 'Southern Ring Nebula', type: 'Planetary nebula', ra: 10.117, dec: -40.436, distPc: 750, sizePc: 0.5, shape: 'planetary', opts: { axis: 0.75, torus: 1 },
+    fact: 'One of the first pictures from the James Webb Space Telescope (2022), which showed that the star making it is the dimmer of the two at its heart, wrapped in dust.' },
+  { id: 'vela-snr', name: 'Vela Supernova Remnant', type: 'Supernova remnant', ra: 8.583, dec: -45.17, distPc: 290, sizePc: 40, shape: 'remnant', opts: { shell: 1 },
+    fact: 'The remains of a star that exploded about 11,000 years ago, one of the closest supernova remnants to us. The pulsar it left behind spins 11 times a second.' },
+  { id: 'tycho-snr', name: 'Tycho\'s Supernova Remnant', type: 'Supernova remnant', ra: 0.4214, dec: 64.144, distPc: 2700, sizePc: 6.3, shape: 'remnant', opts: { shell: 1 },
+    fact: 'Tycho Brahe watched this star blaze up in 1572, at first bright enough to see in daylight. It helped prove that the heavens beyond the Moon can change.' },
 ];
 
 /** The group's center of mass sits roughly midway between its two giants. */
@@ -374,6 +388,17 @@ export const BLACK_HOLES: BlackHoleInfo[] = [
     fact: 'The heaviest stellar black hole known in the Milky Way, 33 Suns, found in 2024 from the wobble of the old star orbiting it.' },
   { id: 'omega-cen-bh', name: 'Omega Centauri black hole', type: 'Intermediate-mass black hole', solarMasses: 8200, ra: 13.4465, dec: -47.4794, distPc: 5430, disk: 0, sky: 'globular',
     fact: 'At least 8,200 Suns: a rare "in-between" black hole, found in 2024 from seven stars racing through the cluster\'s core too fast to stay bound without it. Its packed cluster of ten million stars surrounds it.' },
+  { id: 'm77-bh', name: 'M77* (black hole)', type: 'Supermassive black hole', solarMasses: 1e7, host: 'm77', disk: 1.1, temp: 6000, jet: 0.3,
+    fact: 'About 10 million Suns, hidden behind a thick ring of dust. In 2022 the IceCube detector at the South Pole found ghostly particles called neutrinos streaming from it.' },
+  { id: 'ngc-1365-bh', name: 'NGC 1365* (black hole)', type: 'Supermassive black hole', solarMasses: 2e6, host: 'ngc-1365', disk: 0.9, temp: 6000,
+    fact: 'About 2 million Suns. In 2013 it became one of the first black holes whose spin was measured: it turns at more than 84% of the fastest rate possible.' },
+  { id: 'ngc-7727-bh', name: 'NGC 7727 black hole pair', type: 'Pair of supermassive black holes', solarMasses: 1.54e8, ra: 23.6649, dec: -12.2928, distPc: 2.74e7, disk: 0.3, temp: 3500, markTo: 24,
+    fact: 'The closest known pair of supermassive black holes (found in 2021): this one, 154 million Suns, and a 6-million-Sun partner just 1,600 light-years away, left over from a galaxy merger.' },
+  { id: 'oj-287', name: 'OJ 287', type: 'Binary black hole (blazar)', solarMasses: 1.8e10, ra: 8.9136, dec: 20.1086, distPc: 1.25e9, disk: 1.2, temp: 8000, rOut: 18, jet: 1, markTo: 25.5,
+    fact: 'A blazar that flares about every 12 years, thought to be a smaller black hole punching through the disk of a giant one (about 18 billion Suns in the leading model) as they orbit each other.' },
+  { id: 'maxi-j1820', name: 'MAXI J1820+070', type: 'Stellar black hole', solarMasses: 8.5, ra: 18.3394, dec: 7.1853, distPc: 2960, disk: 1, temp: 24000, rOut: 10, jet: 0.6,
+    companion: { name: 'MAXI J1820+070\'s companion (orange dwarf)', radiusSun: 1.1, distAU: 0.032, periodDays: 0.685, tempK: 4500, stream: true },
+    fact: 'An 8.5-Sun black hole that flared in 2018 into one of the brightest X-ray sources in the sky, shooting out jets at most of the speed of light. A small star circles it every 16.5 hours.' },
 ];
 export const horizonM = (solarMasses: number) => solarMasses * 2953;
 
